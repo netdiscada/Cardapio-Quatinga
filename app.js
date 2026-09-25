@@ -457,6 +457,8 @@
   updateDarkModeButton();
   document.getElementById('darkModeToggle').addEventListener('click', global.toggleDarkMode);
   document.getElementById('menu-image').addEventListener('load', global.handleImageLoad);
+    document.getElementById('menu-image').addEventListener('click', menuViewerOpen);
+    document.getElementById('menu-image').addEventListener('click', menuViewerOpen);
 
   window.addEventListener('online', () => { updateOnlineStatus(); showToast("Conexão restabelecida!", "success"); });
   window.addEventListener('offline', () => { updateOnlineStatus(); showToast("Você está offline. Alterações serão salvas no celular.", "info", 5000); });

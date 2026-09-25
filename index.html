@@ -201,6 +201,185 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+<style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s ease; }
+        .modal-content { padding: 2rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 90vh; overflow-y: auto; width: 90%; max-width: 500px; }
+        
+        html.dark { background-color: #000000; color: #f4f4f5; }
+        .dark .modal-content { background-color: #09090b; border: 1px solid #27272a; color: #f4f4f5; }
+        html:not(.dark) .modal-content { background-color: white; color: #1f2937; }
+        
+        #image-zoom-modal .modal-content { width: auto; max-width: 95%; padding: 0.5rem; background: none !important; box-shadow: none; border: none; }
+        #zoomed-image { max-width: 90vw; max-height: 85vh; border-radius: 0.75rem; }
+        
+        input:read-only { cursor: not-allowed; }
+        html:not(.dark) input:read-only { background-color: #f3f4f6; }
+        .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
+
+        /* Wizard Buttons */
+        .wizard-btn { transition: all 0.2s ease-in-out; }
+        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
+        .wizard-btn:active { transform: scale(0.98); }
+        .dark .wizard-btn:active { background-color: #1e3a8a; }
+        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
+
+        /* APRIMORAMENTO: Refinamento de dark mode para consistência */
+        .dark {
+          --tw-border-opacity: 0.1;
+          --tw-bg-opacity: 0.9;
+          --tw-shadow: 0 0 #0000;
+        }
+
+        .dark .modal-content {
+          background-color: #09090b !important; /* Garante sobrescrita */
+          border-color: #27272a !important;
+        }
+
+        .dark #cropper-container,
+        .dark #imagePreviewContainer {
+          background-color: #09090b !important;
+        }
+
+        .dark .wizard-btn:active {
+          background-color: #1e3a8a !important;
+        }
+
+        .dark input:read-only {
+          background-color: #18181b !important;
+          color: #a1a1aa !important;
+          border-color: #27272a !important;
+        }
+
+        #cropper-container { max-height: 50vh; width: 100%; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+        .dark #cropper-container { background-color: #18181b; }
+        #cropper-image { display: block; max-width: 100%; max-height: 100%; }
+
+        /* Toast Notifications */
+        #app-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 8px; z-index: 2000; opacity: 0; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+        #app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        #app-toast.success { background-color: #22c55e; }
+        #app-toast.error { background-color: #ef4444; }
+        #app-toast.info { background-color: #3b82f6; }
+
+        /* ===== Painel ADM: Bottom Bar fixa (Sem rolagem) ===== */
+        #admin-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem 0.75rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+        html.dark #admin-tabs {
+            background-color: rgba(24, 24, 27, 0.95);
+            border-top-color: #27272a;
+        }
+        .admin-tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 0.4rem 0.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.15s ease, background-color 0.15s ease;
+            gap: 0.15rem;
+            text-align: center;
+        }
+        html.dark .admin-tab-btn { color: #a1a1aa; }
+        .admin-tab-btn:hover { color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
+        html.dark .admin-tab-btn:hover { color: #60a5fa; background-color: rgba(96, 165, 250, 0.05); }
+        .admin-tab-btn.active { color: #2563eb; background-color: rgba(37, 99, 235, 0.1); font-weight: 700; }
+        html.dark .admin-tab-btn.active { color: #60a5fa; background-color: rgba(96, 165, 250, 0.15); }
+
+        /* Badge de contagem de pedidos na aba Pedidos */
+        .admin-tab-btn { position: relative; }
+        .admin-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.5rem;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            padding: 0 0.3rem;
+            background-color: #ef4444;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.15rem;
+            border-radius: 9999px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        .admin-badge.hidden { display: none; }
+
+        /* Espaçamento inferior no admin-view para o conteúdo não ficar coberto pela barra fixa */
+        #admin-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        #user-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        /* Bottom bar do funcionário: controlada por classe no body (show-user-tabs),
+           alternada pelo JS junto com showUserView/showAdminView */
+        #user-tabs { display: none; }
+        body.show-user-tabs #user-tabs { display: flex; }
+        /* Guarda contra zoom-out por overflow horizontal: conteúdo ADM nunca
+           pode ultrapassar a largura da tela (corta em vez de alargar a página) */
+        #admin-view section, #admin-view section > * { max-width: 100%; }
+        #rgf-consult-result { overflow-wrap: anywhere; }
+        
+        @media print {
+                    .no-print { display: none !important; }
+                }
+
+                /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
+                /* Wizard dentro do viewer: cartão claro flutuando no rodapé escuro */
+                #menu-viewer-buttons > #order-wizard-container {
+                    background: #ffffff !important;
+                    border: none !important;
+                    border-radius: 1rem 1rem 0 0;
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+                    margin-bottom: 0 !important;
+                    max-height: 45vh;
+                    overflow-y: auto;
+                }
+                /* Botões do wizard grandes e fáceis de tocar (idosos) */
+                #menu-viewer-buttons .wizard-btn {
+                    min-height: 56px;
+                    font-size: 1rem;
+                }
+                /* Barra de progresso do wizard visível no fundo escuro */
+                #menu-viewer-buttons #wizard-progress span {
+                    box-shadow: 0 0 4px rgba(255,255,255,0.3);
+                }
+                /* Container do submit (revisar pedido) também entra no rodapé */
+                #menu-viewer-buttons > #submitButtonContainer {
+                    margin-top: 0.5rem;
+                }
+            </style>
+<script src="js/menu-viewer.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -704,5 +883,14 @@
     <script src="js/notificationTrigger.js"></script>
     <script src="js/pushRegistration.js"></script>
     <script src="js/app.js"></script>
+<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
+            <!-- Topo: fecha + controles de zoom -->
+            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
+                <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
+                    <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
+                    <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
+                </div>
 </body>
 </html>
