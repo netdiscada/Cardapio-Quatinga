@@ -180,13 +180,15 @@
       : 'text-green-600 dark:text-green-400');
   }
 
-  function userRgfRender(latest, verbas, adiantamento) {
+  function userRgfRender(latest, verbas) {
     const resultEl = document.getElementById('user-rgf-consult-result');
     if (!resultEl) return;
     const badge = latest.situacao === 'Ativo'
       ? '<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Ativo</span>'
       : `<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">${latest.situacao || 'Inativo'}</span>`;
-    const adiantamentoValor = adiantamento ? parseFloat(adiantamento.liquido) : 0;
+    // Busca o adiantamento nas verbas de desconto
+    const adiantamentoVerba = verbas && verbas.find(v => v.desnoverba && v.desnoverba.includes('ADIANTAMENTO'));
+    const adiantamentoValor = adiantamentoVerba ? Math.abs(parseFloat(adiantamentoVerba.valorverba)) : 0;
     const salarioRestante = parseFloat(latest.liquido) - adiantamentoValor;
     let html = `
       <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
@@ -252,13 +254,8 @@
         return;
       }
       const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-      const adiantamentos = results.filter(r => r.tipo_folha === 'Adiantamento Salarial');
       const pool = mensais.length > 0 ? mensais : results;
       const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
-      // Adiantamento vem do mês ANTERIOR ao da folha mensal
-      const mesAdiantamento = latest.mes === 1 ? 12 : latest.mes - 1;
-      const anoAdiantamento = latest.mes === 1 ? latest.ano - 1 : latest.ano;
-      const adiantamento = adiantamentos.find(a => a.ano === anoAdiantamento && a.mes === mesAdiantamento);
       userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
       let verbas = null;
@@ -270,7 +267,7 @@
         }
       } catch (_) { /* detalhe opcional */ }
 
-      userRgfRender(latest, verbas, adiantamento);
+      userRgfRender(latest, verbas);
     } catch (err) {
       userRgfSetStatus('Erro na consulta: ' + err.message, 'error');
     } finally {
