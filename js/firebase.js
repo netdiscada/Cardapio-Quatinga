@@ -14,6 +14,8 @@
     // No build compat o Firestore ja vem com persistencia offline multi-abas habilitada
     // por padrao (equivalente ao persistentLocalCache + persistentMultipleTabManager do v1.x).
     db = global.firebase.firestore(app);
+    // Habilita persistência offline do Firestore (cache no celular)
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     auth = global.firebase.auth(app);
   } catch (error) {
     console.error("Erro ao inicializar Firebase: ", error);
