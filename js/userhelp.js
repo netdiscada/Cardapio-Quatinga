@@ -203,8 +203,8 @@
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Competência</span><span class="font-semibold text-gray-800 dark:text-gray-100">${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Bruto</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.bruto)}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Líquido</span><span class="font-bold text-blue-700 dark:text-blue-400">${fmtMoneyUser(latest.liquido)}</span></div>
-          <div class="flex justify-between gap-2 text-sm border-t border-gray-100 dark:border-zinc-800 pt-2 mt-1"><span class="text-gray-500 dark:text-gray-400">Dia 5 (adiantamento)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido * 0.4)}</span></div>
-          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Dia 20 (restante)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido - (latest.liquido * 0.4))}</span></div>
+          <div class="flex justify-between gap-2 text-sm border-t border-gray-100 dark:border-zinc-800 pt-2 mt-1"><span class="text-gray-500 dark:text-gray-400">Dia 20 (adiantamento)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido * 0.3)}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Dia 5 (restante)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido - (latest.liquido * 0.3))}</span></div>
         </div>
       </div>`;
     if (verbas && verbas.length > 0) {
