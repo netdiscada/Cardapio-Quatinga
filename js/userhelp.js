@@ -255,7 +255,10 @@
       const adiantamentos = results.filter(r => r.tipo_folha === 'Adiantamento Salarial');
       const pool = mensais.length > 0 ? mensais : results;
       const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
-      const adiantamento = adiantamentos.find(a => a.ano === latest.ano && a.mes === latest.mes);
+      // Adiantamento vem do mês ANTERIOR ao da folha mensal
+      const mesAdiantamento = latest.mes === 1 ? 12 : latest.mes - 1;
+      const anoAdiantamento = latest.mes === 1 ? latest.ano - 1 : latest.ano;
+      const adiantamento = adiantamentos.find(a => a.ano === anoAdiantamento && a.mes === mesAdiantamento);
       userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
       let verbas = null;
