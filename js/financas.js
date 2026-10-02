@@ -56,6 +56,44 @@
     return fb.doc(global.db, 'financas', rgf).collection('lancamentos');
   }
 
+  // ===== API Prefeitura (contracheque) =====
+  const PREFEITURA_API = 'https://dadosadm.mogidascruzes.sp.gov.br/api';
+
+  async function consultarContracheque(rgf) {
+    const anoAtual = new Date().getFullYear();
+    let results = [];
+    for (let ano = anoAtual; ano >= anoAtual - 2 && results.length === 0; ano--) {
+      try {
+        const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data.results && data.results.length > 0) results = data.results;
+      } catch (e) { /* ignora e tenta o ano anterior */ }
+    }
+    if (!results.length) return null;
+    const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
+    const pool = mensais.length > 0 ? mensais : results;
+    const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+    let verbas = [];
+    try {
+      const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
+      if (respF.ok) {
+        const fd = await respF.json();
+        if (fd.results) verbas = fd.results;
+      }
+    } catch (e) { /* detalhe opcional */ }
+    const adiantamentoVerba = verbas.find(v => v.desnoverba && v.desnoverba.includes('ADIANTAMENTO'));
+    const adiantamento = adiantamentoVerba ? Math.abs(parseFloat(adiantamentoVerba.valorverba)) : 0;
+    const liquido = parseFloat(latest.liquido) || 0;
+    return {
+      competencia: { mes: latest.mes - 1, ano: latest.ano },
+      adiantamento,
+      salarioDia5: Math.max(0, liquido - adiantamento),
+      liquido,
+      nome: latest.nome,
+    };
+  }
+
   // ===== Telas =====
   function telas() {
     return {
@@ -174,6 +212,62 @@
     renderMesSeletor();
     iniciarListenerLancamentos();
     setStatus('fin-status', '', 'info');
+    fixosRecorrentes(F.mesAtual, F.anoAtual);
+    contrachequeAuto();
+  }
+
+  // ===== Entradas automáticas do contracheque =====
+  async function contrachequeAuto(silencioso) {
+    try {
+      const dados = await consultarContracheque(F.rgf);
+      if (!dados) {
+        if (!silencioso) global.showToast('Contracheque não encontrado na prefeitura.', 'error');
+        return;
+      }
+      F.contracheque = dados;
+      // Se estamos vendo um mês anterior/atual ao da competência, mescla entradas
+      await mesclarEntradas(dados, F.mesAtual, F.anoAtual);
+      if (!silencioso) global.showToast('Entradas do contracheque atualizadas!', 'success');
+    } catch (err) {
+      if (!silencioso) global.showToast('Erro ao consultar contracheque.', 'error');
+    }
+  }
+
+  async function mesclarEntradas(dados, mes, ano) {
+    // So mescla se o mês visualizado for o MESMO da competência
+    if (!(dados.competencia.mes === mes && dados.competencia.ano === ano)) return;
+
+    const snap = await fb.getDocs(fb.query(lancamentosRef(F.rgf),
+      fb.where('ano', '==', ano), fb.where('mes', '==', mes)));
+    let temAdiant = false, temSalario = false;
+    snap.forEach(d => {
+      const l = d.data();
+      if (l.origem === 'adiantamento') temAdiant = d.ref;
+      if (l.origem === 'salario') temSalario = d.ref;
+    });
+
+    const batch = fb.writeBatch(global.db);
+    if (dados.adiantamento > 0) {
+      const payload = {
+        mes, ano, dia: 20, competencia: 'dia20',
+        categoria: 'salario', valor: dados.adiantamento, tipo: 'entrada',
+        descricao: 'Adiantamento Salarial (Dia 20)', origem: 'adiantamento',
+        createdAt: fb.serverTimestamp(),
+      };
+      if (temAdiant) batch.update(temAdiant, payload);
+      else batch.set(lancamentosRef(F.rgf).doc(), payload);
+    }
+    if (dados.salarioDia5 > 0) {
+      const payload = {
+        mes, ano, dia: 5, competencia: 'dia5',
+        categoria: 'salario', valor: dados.salarioDia5, tipo: 'entrada',
+        descricao: 'Salário (Dia 5)', origem: 'salario',
+        createdAt: fb.serverTimestamp(),
+      };
+      if (temSalario) batch.update(temSalario, payload);
+      else batch.set(lancamentosRef(F.rgf).doc(), payload);
+    }
+    await batch.commit();
   }
 
   function sair() {
@@ -211,6 +305,7 @@
     });
   }
 
+  // Auto-recorrente + contracheque quando muda o mês
   function mudarMes(delta) {
     let m = F.mesAtual + delta;
     let a = F.anoAtual;
@@ -218,7 +313,11 @@
     if (m > 11) { m = 0; a++; }
     F.mesAtual = m; F.anoAtual = a;
     renderMesSeletor();
-    if (F.autenticado) iniciarListenerLancamentos();
+    if (F.autenticado) {
+      fixosRecorrentes(m, a);
+      iniciarListenerLancamentos();
+      contrachequeAuto(true);
+    }
   }
 
   function renderMesSeletor() {
@@ -230,45 +329,64 @@
     const listaEl = document.getElementById('fin-lista');
     if (!listaEl) return;
 
-    let entradas = 0, saidas = 0;
-    const catMaisGasta = {};
-
+    // Separa por competência (dia 5 = salário | dia 20 = adiantamento)
+    const grupos = { dia5: [], dia20: [] };
     F.lancamentos.forEach(l => {
-      const v = Math.abs(parseFloat(l.valor));
-      if (l.tipo === 'entrada') entradas += v;
-      else {
-        saidas += v;
-        catMaisGasta[l.categoria] = (catMaisGasta[l.categoria] || 0) + v;
-      }
+      const g = l.competencia === 'dia20' ? 'dia20' : 'dia5';
+      grupos[g].push(l);
     });
 
-    const sobra = entradas - saidas;
-    document.getElementById('fin-entradas').textContent = fmtMoney(entradas);
-    document.getElementById('fin-saidas').textContent = fmtMoney(saidas);
-    const sobraEl = document.getElementById('fin-sobra');
-    sobraEl.textContent = fmtMoney(sobra);
-    sobraEl.className = 'text-xl font-bold ' + (sobra >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400');
+    const soma = (arr) => arr.reduce((s, l) => s + parseFloat(l.valor), 0);
+    const inD5 = soma(grupos.dia5.filter(l => l.tipo === 'entrada'));
+    const outD5 = Math.abs(soma(grupos.dia5.filter(l => l.tipo !== 'entrada')));
+    const inD20 = soma(grupos.dia20.filter(l => l.tipo === 'entrada'));
+    const outD20 = Math.abs(soma(grupos.dia20.filter(l => l.tipo !== 'entrada')));
+    const sobraD5 = inD5 - outD5, sobraD20 = inD20 - outD20;
+    const total = sobraD5 + sobraD20;
 
-    if (F.lancamentos.length === 0) {
+    // Atualiza cards
+    const setTxt = (id, v, neg) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = fmtMoney(v);
+        if (neg !== undefined) el.className = 'text-sm font-bold ' + (neg ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400');
+      }
+    };
+    setTxt('fin-d20', inD20);
+    setTxt('fin-d5', inD5);
+    setTxt('fin-sobra-d20', sobraD20, sobraD20 < 0);
+    setTxt('fin-sobra-d5', sobraD5, sobraD5 < 0);
+    setTxt('fin-sobra', total, total < 0);
+
+    // Lista
+    const catLabel = (id) => (CATEGORIAS.find(c => c.id === id) || { label: id }).label;
+    if (!F.lancamentos.length) {
       listaEl.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Nenhum lançamento neste mês. Toque em "+ Adicionar" para começar.</p>';
       return;
     }
-
-    const catLabel = (id) => (CATEGORIAS.find(c => c.id === id) || { label: id }).label;
-    listaEl.innerHTML = F.lancamentos.map(l => {
-      const v = Math.abs(parseFloat(l.valor));
-      const neg = l.tipo !== 'entrada';
-      return `<div class="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-gray-100 dark:border-zinc-800">
-        <div class="min-w-0">
-          <p class="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">${l.descricao || catLabel(l.categoria)}</p>
-          <p class="text-[11px] text-gray-500 dark:text-gray-400">${catLabel(l.categoria)} · ${String(l.dia || '').padStart(2, '0')}/${String(l.mes + 1).padStart(2, '0')}</p>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <span class="font-bold text-sm ${neg ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}">${neg ? '−' : '+'} ${fmtMoney(v)}</span>
-          <button type="button" data-del="${l.id}" class="fin-del text-red-500 hover:text-red-700 text-lg font-bold px-1" title="Excluir">🗑️</button>
-        </div>
-      </div>`;
-    }).join('');
+    const renderGrupo = (titulo, itens) => {
+      if (!itens.length) return '';
+      return `<p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mt-3 mb-1">${titulo}</p>` +
+        itens.map(l => {
+          const v = Math.abs(parseFloat(l.valor));
+          const neg = l.tipo !== 'entrada';
+          const fixoBadge = l.fixo ? ' <span title="Fixo mensal" class="text-blue-500">📌</span>' : '';
+          const parcBadge = l.parcela ? ` <span class="text-amber-500">(${l.parcela})</span>` : '';
+          return `<div class="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-gray-100 dark:border-zinc-800">
+            <div class="min-w-0">
+              <p class="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">${l.descricao || catLabel(l.categoria)}${fixoBadge}${parcBadge}</p>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400">${catLabel(l.categoria)} · ${String(l.dia || '').padStart(2, '0')}/${String(l.mes + 1).padStart(2, '0')}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-bold text-sm ${neg ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}">${neg ? '−' : '+'} ${fmtMoney(v)}</span>
+              <button type="button" data-del="${l.id}" class="fin-del text-red-500 hover:text-red-700 text-lg font-bold px-1" title="Excluir">🗑️</button>
+            </div>
+          </div>`;
+        }).join('');
+    };
+    listaEl.innerHTML =
+      renderGrupo('💵 Dia 20 — Adiantamento', grupos.dia20) +
+      renderGrupo('💰 Dia 5 — Salário', grupos.dia5);
   }
 
   async function handleAddLancamento(e) {
@@ -280,29 +398,93 @@
     const descricao = (document.getElementById('fin-add-descricao').value || '').trim();
     const dia = parseInt(document.getElementById('fin-add-dia').value, 10) || new Date().getDate();
     const tipo = document.querySelector('input[name="fin-add-tipo"]:checked')?.value || 'saida';
+    const competencia = document.querySelector('input[name="fin-add-comp"]:checked')?.value || 'dia5';
+    const fixo = document.getElementById('fin-add-fixo').checked;
+    const parcelas = parseInt(document.getElementById('fin-add-parcelas').value, 10) || 0;
 
     if (!valor || isNaN(valor) || valor <= 0) {
       global.showToast('Digite um valor válido.', 'error');
       return;
     }
-    try {
-      await fb.setDoc(lancamentosRef(F.rgf).doc(), {
-        mes: F.mesAtual,
-        ano: F.anoAtual,
-        dia,
-        categoria: cat,
+
+    const batch = fb.writeBatch(global.db);
+    const basePayload = {
+      categoria: cat, tipo, dia, competencia,
+      descricao: descricao || null,
+    };
+
+    if (fixo) {
+      // Fixo: lança AGORA e o auto-recorrente cuida dos próximos meses
+      batch.set(lancamentosRef(F.rgf).doc(), {
+        ...basePayload,
+        mes: F.mesAtual, ano: F.anoAtual,
         valor: tipo === 'saida' ? -valor : valor,
-        tipo,
-        descricao,
+        fixo: true,
         createdAt: fb.serverTimestamp(),
       });
-      global.showToast('Lançamento salvo!', 'success');
+    } else if (parcelas > 1) {
+      // Parcelado: N lançamentos, um por mês
+      const valorParcela = Math.round((valor / parcelas) * 100) / 100;
+      for (let i = 1; i <= parcelas; i++) {
+        let m = F.mesAtual + (i - 1), a = F.anoAtual;
+        while (m > 11) { m -= 12; a++; }
+        batch.set(lancamentosRef(F.rgf).doc(), {
+          ...basePayload,
+          mes: m, ano: a,
+          valor: tipo === 'saida' ? -valorParcela : valorParcela,
+          parcela: `${i}/${parcelas}`,
+          descricao: (descricao || '') + ` (${i}/${parcelas})`,
+          createdAt: fb.serverTimestamp(),
+        });
+      }
+    } else {
+      // Avulso: só este mês
+      batch.set(lancamentosRef(F.rgf).doc(), {
+        ...basePayload,
+        mes: F.mesAtual, ano: F.anoAtual,
+        valor: tipo === 'saida' ? -valor : valor,
+        createdAt: fb.serverTimestamp(),
+      });
+    }
+
+    try {
+      await batch.commit();
+      global.showToast(fixo ? 'Fixo salvo! Será repetido todo mês.' : parcelas > 1 ? `${parcelas} parcelas criadas!` : 'Lançamento salvo!', 'success');
       document.getElementById('fin-add-valor').value = '';
       document.getElementById('fin-add-descricao').value = '';
+      document.getElementById('fin-add-parcels-wrap').classList.add('hidden');
       document.getElementById('fin-add-modal').classList.add('hidden');
     } catch (err) {
       global.showToast('Erro ao salvar: ' + err.message, 'error');
     }
+  }
+
+  // Auto-recorrente: ao abrir um mês novo, clona os fixos
+  async function fixosRecorrentes(mes, ano) {
+    try {
+      const snap = await fb.getDocs(fb.query(lancamentosRef(F.rgf), fb.where('fixo', '==', true)));
+      if (snap.empty) return;
+      const existentes = {};
+      const snapMes = await fb.getDocs(fb.query(lancamentosRef(F.rgf),
+        fb.where('ano', '==', ano), fb.where('mes', '==', mes), fb.where('fixo', '==', true)));
+      snapMes.forEach(d => existentes[d.data().descricao + '|' + d.data().categoria] = true);
+
+      const batch = fb.writeBatch(global.db);
+      let criados = 0;
+      snap.forEach(d => {
+        const l = d.data();
+        // Clone fixos que NÃO são deste mês e que ainda não existem neste mês
+        if (!(l.mes === mes && l.ano === ano) && !existentes[(l.descricao || '') + '|' + l.categoria]) {
+          batch.set(lancamentosRef(F.rgf).doc(), {
+            ...Object.keys(l).reduce((o, k) => (k === 'mes' || k === 'ano' || k === 'createdAt' ? o : { ...o, [k]: l[k] }), {}),
+            mes, ano,
+            createdAt: fb.serverTimestamp(),
+          });
+          criados++;
+        }
+      });
+      if (criados) await batch.commit();
+    } catch (e) { console.warn('Fixos recorrentes:', e); }
   }
 
   async function handleDeleteLancamento(id) {
@@ -346,29 +528,40 @@
     doc.setFontSize(16);
     doc.text(titulo, 14, 18);
 
-    let entradas = 0, saidas = 0;
+    const grupos = { dia5: [], dia20: [] };
     F.lancamentos.forEach(l => {
-      const v = Math.abs(parseFloat(l.valor));
-      if (l.tipo === 'entrada') entradas += v; else saidas += v;
+      const g = l.competencia === 'dia20' ? 'dia20' : 'dia5';
+      grupos[g].push(l);
     });
+    const soma = (arr) => arr.reduce((s, l) => s + parseFloat(l.valor), 0);
+    const inD5 = soma(grupos.dia5.filter(l => l.tipo === 'entrada'));
+    const outD5 = Math.abs(soma(grupos.dia5.filter(l => l.tipo !== 'entrada')));
+    const inD20 = soma(grupos.dia20.filter(l => l.tipo === 'entrada'));
+    const outD20 = Math.abs(soma(grupos.dia20.filter(l => l.tipo !== 'entrada')));
 
     doc.setFontSize(11);
-    doc.text(`Entradas: ${fmtMoney(entradas)}`, 14, 30);
-    doc.text(`Saídas:    ${fmtMoney(saidas)}`, 14, 37);
-    doc.text(`Sobra:     ${fmtMoney(entradas - saidas)}`, 14, 44);
+    doc.text(`Dia 20 (Adiantamento):  ${fmtMoney(inD20)}`, 14, 28);
+    doc.text(`Dia 5  (Salario):       ${fmtMoney(inD5)}`, 14, 35);
+    doc.text(`Sobra Dia 20:           ${fmtMoney(inD20 - outD20)}`, 14, 44);
+    doc.text(`Sobra Dia 5:            ${fmtMoney(inD5 - outD5)}`, 14, 51);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`TOTAL:                  ${fmtMoney(inD5 + inD20 - outD5 - outD20)}`, 14, 60);
+    doc.setFont(undefined, 'normal');
 
     const catLabel = (id) => (CATEGORIAS.find(c => c.id === id) || { label: id }).label.replace(/^[^ ]+ /, '');
     const rows = F.lancamentos.map(l => [
       `${String(l.dia || '').padStart(2, '0')}/${String(l.mes + 1).padStart(2, '0')}/${l.ano}`,
-      l.descricao || catLabel(l.categoria),
+      (l.descricao || catLabel(l.categoria)) + (l.parcela ? ` (${l.parcela})` : ''),
       catLabel(l.categoria),
+      l.competencia === 'dia20' ? 'Dia 20' : 'Dia 5',
       (l.tipo === 'entrada' ? '+' : '−') + ' ' + fmtMoney(Math.abs(parseFloat(l.valor))),
     ]);
 
     doc.autoTable({
-      head: [['Data', 'Descrição', 'Categoria', 'Valor']],
+      head: [['Data', 'Descrição', 'Categoria', 'Competência', 'Valor']],
       body: rows,
-      startY: 52,
+      startY: 68,
       styles: { fontSize: 9 },
       headStyles: { fillColor: [37, 99, 235] },
     });
@@ -410,6 +603,11 @@
     const hoje = new Date().getDate();
     const diaEl = document.getElementById('fin-add-dia');
     if (diaEl) diaEl.value = hoje;
+
+    // Exibe/oculta campo de parcelas
+    document.getElementById('fin-add-fixo').addEventListener('change', (e) => {
+      document.getElementById('fin-add-parcels-wrap').classList.toggle('hidden', e.target.checked);
+    });
 
     mostrarTela('login');
   }
