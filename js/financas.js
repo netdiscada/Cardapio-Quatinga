@@ -818,33 +818,47 @@
       });
     }
 
-    // Calculadora modal — tipo
-    function abrirCalcTipo() {
-      document.getElementById('fin-calc-tipo-modal').classList.remove('hidden');
+    // Calculadora simples — abre modal
+    const finCalcBtn = document.getElementById('fin-calculadora-btn');
+    if (finCalcBtn) {
+      finCalcBtn.addEventListener('click', () => {
+        document.getElementById('fin-calc-modal').classList.remove('hidden');
+        document.getElementById('fin-calc-tipo-modal').classList.remove('hidden');
+        document.getElementById('fin-calc-campos').classList.add('hidden');
+      });
+    }
+    // Fechar modal calculadora
+    document.getElementById('fin-calc-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('fin-calc-modal')) {
+        document.getElementById('fin-calc-modal').classList.add('hidden');
+      }
+    });
+    // Botões de tipo (desconto, aumento, falta, 13/ferias)
+    document.querySelectorAll('[data-calc-tipo]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tipo = btn.dataset.calcTipo;
+        document.getElementById('fin-calc-tipo-modal').classList.add('hidden');
+        document.getElementById('fin-calc-campos').classList.remove('hidden');
+        document.getElementById('fin-calc-titulo').textContent =
+          tipo === 'desconto' ? '📉 Simular Desconto' :
+          tipo === 'aumento' ? '📈 Simular Aumento' :
+          tipo === 'falta' ? '🚫 Simular Falta' :
+          '💰 Projeção 13º / Férias';
+        document.getElementById('fin-calc-dias-wrap').classList.toggle('hidden', tipo !== 'falta');
+        const salario = F.contracheque ? F.contracheque.liquido : 0;
+        document.getElementById('fin-calc-salario').value = salario ? salario.toFixed(2) : '';
+        F._calcTipo = tipo;
+      });
+    });
+    // Botão voltar da calculadora
+    document.getElementById('fin-calc-voltar').addEventListener('click', () => {
       document.getElementById('fin-calc-campos').classList.add('hidden');
       document.getElementById('fin-calc-resultado').classList.add('hidden');
-    }
-
-    function abrirCalcForm(tipo) {
-      document.getElementById('fin-calc-tipo-modal').classList.add('hidden');
-      document.getElementById('fin-calc-campos').classList.remove('hidden');
-      document.getElementById('fin-calc-resultado').classList.add('hidden');
-      document.getElementById('fin-calc-dias-wrap').classList.toggle('hidden', tipo !== 'falta');
-      document.getElementById('fin-calc-titulo').textContent =
-        tipo === 'desconto' ? '📉 Simular Desconto' :
-        tipo === 'aumento' ? '📈 Simular Aumento' :
-        tipo === 'falta' ? '🚫 Simular Falta' :
-        '💰 Projeção 13º / Férias';
-
-      // Preenche com dados do contracheque
-      let salario = 0;
-      if (F.contracheque) salario = F.contracheque.liquido;
-      document.getElementById('fin-calc-salario').value = salario.toFixed(2);
-      F._calcTipo = tipo;
-    }
-
-    function calcular() {
-      const tipo = F._calcTipo;
+      document.getElementById('fin-calc-tipo-modal').classList.remove('hidden');
+    });
+    // Botão calcular
+    document.getElementById('fin-calc-calcular').addEventListener('click', () => {
+      const tipo = F._calcTipo || 'desconto';
       const salario = parseFloat((document.getElementById('fin-calc-salario').value || '0').replace(',', '.'));
       const perc = parseFloat((document.getElementById('fin-calc-perc').value || '0').replace(',', '.'));
       const dias = parseInt(document.getElementById('fin-calc-dias').value, 10) || 0;
@@ -852,74 +866,25 @@
 
       let html = '';
       if (tipo === 'desconto' && salario && perc) {
-        const novoSalario = salario - (salario * perc / 100);
-        html = `<p class="text-sm text-gray-500 dark:text-gray-400">Salário atual:</p>
-          <p class="text-lg font-bold text-gray-800 dark:text-gray-100">${fmtMoney(salario)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Desconto de ${perc}%:</p>
-          <p class="text-lg font-bold text-red-600 dark:text-red-400">− ${fmtMoney(salario * perc / 100)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Salário com desconto:</p>
-          <p class="text-xl font-bold text-green-700 dark:text-green-400">${fmtMoney(novoSalario)}</p>`;
+        const novo = salario - (salario * perc / 100);
+        html = `<p>Desconto ${perc}%: <strong class="text-red-600">− ${fmtMoney(salario * perc / 100)}</strong><br>
+          Salário: <strong class="text-green-600">${fmtMoney(novo)}</strong></p>`;
       } else if (tipo === 'aumento' && salario && perc) {
-        const novoSalario = salario + (salario * perc / 100);
-        html = `<p class="text-sm text-gray-500 dark:text-gray-400">Salário atual:</p>
-          <p class="text-lg font-bold text-gray-800 dark:text-gray-100">${fmtMoney(salario)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Aumento de ${perc}%:</p>
-          <p class="text-lg font-bold text-green-600 dark:text-green-400">+ ${fmtMoney(salario * perc / 100)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Salário com aumento:</p>
-          <p class="text-xl font-bold text-green-700 dark:text-green-400">${fmtMoney(novoSalario)}</p>`;
+        const novo = salario + (salario * perc / 100);
+        html = `<p>Aumento ${perc}%: <strong class="text-green-600">+ ${fmtMoney(salario * perc / 100)}</strong><br>
+          Salário: <strong class="text-green-600">${fmtMoney(novo)}</strong></p>`;
       } else if (tipo === 'falta' && salario && dias) {
         const valorDia = salario / 30;
-        const desconto = valorDia * dias;
-        const novoSalario = salario - desconto;
-        html = `<p class="text-sm text-gray-500 dark:text-gray-400">Salário atual:</p>
-          <p class="text-lg font-bold text-gray-800 dark:text-gray-100">${fmtMoney(salario)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Faltas (${dias} dia${dias !== 1 ? 's' : ''}):</p>
-          <p class="text-lg font-bold text-red-600 dark:text-red-400">− ${fmtMoney(desconto)}</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Salário com falta:</p>
-          <p class="text-xl font-bold text-green-700 dark:text-green-400">${fmtMoney(novoSalario)}</p>`;
+        html = `<p>${dias} falta(s): <strong class="text-red-600">− ${fmtMoney(valorDia * dias)}</strong><br>
+          Salário: <strong class="text-green-600">${fmtMoney(salario - (valorDia * dias))}</strong></p>`;
       } else if (tipo === '13ferias' && salario) {
-        const decimo = salario; // simplificado
-        const ferias = salario + (salario / 3);
-        html = `<p class="text-sm text-gray-500 dark:text-gray-400">Com base no salário de ${fmtMoney(salario)}:</p>
-          <div class="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-            <p class="text-sm font-bold text-green-800 dark:text-green-400">🎄 Décimo Terceiro:</p>
-            <p class="text-xl font-bold text-green-700 dark:text-green-500">${fmtMoney(decimo)}</p>
-          </div>
-          <div class="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-            <p class="text-sm font-bold text-blue-800 dark:text-blue-400">🏖️ Férias (salário + 1/3):</p>
-            <p class="text-xl font-bold text-blue-700 dark:text-blue-500">${fmtMoney(ferias)}</p>
-          </div>`;
+        html = `<p>🎄 13º: <strong class="text-green-600">${fmtMoney(salario)}</strong><br>
+          🏖️ Férias: <strong class="text-blue-600">${fmtMoney(salario + (salario / 3))}</strong></p>`;
       } else {
-        html = '<p class="text-red-500 text-sm">Preencha os campos.</p>';
+        html = '<p class="text-red-500">Preencha os campos</p>';
       }
-
       resEl.innerHTML = html;
       resEl.classList.remove('hidden');
-    }
-
-    // Botão de calculadora no painel
-    const finCalcBtn = document.getElementById('fin-calculadora-btn');
-    if (finCalcBtn) finCalcBtn.addEventListener('click', abrirCalcTipo);
-    document.getElementById('fin-calc-voltar').addEventListener('click', () => {
-      document.getElementById('fin-calc-campos').classList.add('hidden');
-      document.getElementById('fin-calc-resultado').classList.add('hidden');
-      document.getElementById('fin-calc-tipo-modal').classList.remove('hidden');
-    });
-    document.getElementById('fin-calc-fechar-campos').addEventListener('click', () => {
-      document.getElementById('fin-calc-modal').classList.add('hidden');
-      document.getElementById('fin-calc-resultado').innerHTML = '';
-      document.getElementById('fin-calc-perc').value = '';
-      document.getElementById('fin-calc-dias').value = '';
-    });
-    document.getElementById('fin-calc-calcular').addEventListener('click', calcular);
-    document.querySelectorAll('[data-calc-tipo]').forEach(btn => {
-      btn.addEventListener('click', () => abrirCalcForm(btn.dataset.calcTipo));
-    });
-    // Fechar modal clicando fora
-    document.getElementById('fin-calc-modal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('fin-calc-modal')) {
-        document.getElementById('fin-calc-modal').classList.add('hidden');
-      }
     });
 
     // Data padrão do lançamento = hoje
