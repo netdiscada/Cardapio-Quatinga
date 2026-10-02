@@ -405,6 +405,7 @@
     if (global.bindEmployeeSearchHandler) global.bindEmployeeSearchHandler();
     if (global.bindRgfConsultHandler) global.bindRgfConsultHandler();
     if (global.initUserHelp) global.initUserHelp();
+    if (global.initFinancas) global.initFinancas();
 
     // ===== v3: Toggle do formulario de adicionar funcionario =====
     const toggleAddEmployeeFormBtn = document.getElementById('toggleAddEmployeeForm');
