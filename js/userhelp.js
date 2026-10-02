@@ -180,12 +180,14 @@
       : 'text-green-600 dark:text-green-400');
   }
 
-  function userRgfRender(latest, verbas) {
+  function userRgfRender(latest, verbas, adiantamento) {
     const resultEl = document.getElementById('user-rgf-consult-result');
     if (!resultEl) return;
     const badge = latest.situacao === 'Ativo'
       ? '<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Ativo</span>'
       : `<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">${latest.situacao || 'Inativo'}</span>`;
+    const adiantamentoValor = adiantamento ? parseFloat(adiantamento.liquido) : 0;
+    const salarioRestante = parseFloat(latest.liquido) - adiantamentoValor;
     let html = `
       <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
         <div class="bg-blue-600 dark:bg-blue-500 px-4 py-3">
@@ -202,9 +204,9 @@
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Local</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.localtrabalho || '—'}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Competência</span><span class="font-semibold text-gray-800 dark:text-gray-100">${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Bruto</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.bruto)}</span></div>
-          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Líquido</span><span class="font-bold text-blue-700 dark:text-blue-400">${fmtMoneyUser(latest.liquido)}</span></div>
-          <div class="flex justify-between gap-2 text-sm border-t border-gray-100 dark:border-zinc-800 pt-2 mt-1"><span class="text-gray-500 dark:text-gray-400">Dia 20 (adiantamento)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido * 0.3)}</span></div>
-          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Dia 5 (restante)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.liquido - (latest.liquido * 0.3))}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Líquido total</span><span class="font-bold text-blue-700 dark:text-blue-400">${fmtMoneyUser(latest.liquido)}</span></div>
+          <div class="flex justify-between gap-2 text-sm border-t border-gray-100 dark:border-zinc-800 pt-2 mt-1"><span class="text-gray-500 dark:text-gray-400">Dia 20 (adiantamento)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(adiantamentoValor)}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Dia 5 (salário)</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(salarioRestante)}</span></div>
         </div>
       </div>`;
     if (verbas && verbas.length > 0) {
@@ -250,8 +252,10 @@
         return;
       }
       const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
+      const adiantamentos = results.filter(r => r.tipo_folha === 'Adiantamento Salarial');
       const pool = mensais.length > 0 ? mensais : results;
       const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+      const adiantamento = adiantamentos.find(a => a.ano === latest.ano && a.mes === latest.mes);
       userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
       let verbas = null;
@@ -263,7 +267,7 @@
         }
       } catch (_) { /* detalhe opcional */ }
 
-      userRgfRender(latest, verbas);
+      userRgfRender(latest, verbas, adiantamento);
     } catch (err) {
       userRgfSetStatus('Erro na consulta: ' + err.message, 'error');
     } finally {
