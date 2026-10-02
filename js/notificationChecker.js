@@ -73,7 +73,7 @@
   async function checkMenu() {
     try {
       const docSnap = await fb.getDoc(global.getMenuDocRef());
-      if (!docSnap.exists()) return;
+      if (!docSnap.exists) return;
 
       const data = docSnap.data();
       const currentHash = hashMenu(data);
@@ -158,7 +158,7 @@
 
       // Verifica se tem cardápio da semana atual disponível
       const menuSnap = await fb.getDoc(global.getMenuDocRef());
-      if (!menuSnap.exists() || !menuSnap.data().menuImageBase64) return;
+      if (!menuSnap.exists || !menuSnap.data().menuImageBase64) return;
 
       // Controle de tempo: só lembra a cada 15 min (900000 ms)
       const now = Date.now();
