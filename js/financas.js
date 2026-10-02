@@ -845,8 +845,16 @@
           tipo === 'falta' ? '🚫 Simular Falta' :
           '💰 Projeção 13º / Férias';
         document.getElementById('fin-calc-dias-wrap').classList.toggle('hidden', tipo !== 'falta');
-        const salario = F.contracheque ? F.contracheque.liquido : 0;
-        document.getElementById('fin-calc-salario').value = salario ? salario.toFixed(2) : '';
+        // Preenche automaticamente com salário do contracheque ou do mês atual
+        let salario = 0;
+        if (F.contracheque && F.contracheque.latest) {
+          salario = F.contracheque.latest.liquido;
+        } else {
+          // Calcula a soma das entradas do mês atual
+          const entradas = F.lancamentos.filter(l => l.tipo === 'entrada');
+          salario = entradas.reduce((sum, l) => sum + Math.abs(parseFloat(l.valor) || 0), 0);
+        }
+        document.getElementById('fin-calc-salario').value = salario.toFixed(2);
         F._calcTipo = tipo;
       });
     });
