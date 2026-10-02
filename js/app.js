@@ -55,11 +55,18 @@
       const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
       document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
 
-      const swCode = `self.addEventListener('fetch', function(e) {});`;
-      const swBlob = new Blob([swCode], { type: 'application/javascript' });
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+      // Registra o Service Worker real (sw.js) para offline
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
+
+      // Pre-carrega dados principais no cache do Firestore (pra funcionar offline)
+      setTimeout(() => {
+        try {
+          if (global.getMenuDocRef) global.getMenuDocRef().get().catch(() => {});
+          if (global.getFuncionariosCollectionRef) global.getFuncionariosCollectionRef().get().catch(() => {});
+        } catch (e) { /* offline ou cota */ }
+      }, 2000);
     } catch (e) { console.log("PWA setup falhou"); }
   }
   setupPWA();
