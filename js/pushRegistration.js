@@ -137,6 +137,14 @@
 
     } catch (e) {
       console.error('[pushRegistration] Falha Web Push:', e);
+      // Debug detalhado
+      if (e.name === 'NotAllowedError') {
+        console.log('[pushRegistration] Usuário negou permissão de notificação');
+      } else if (e.name === 'NotSupportedError') {
+        console.log('[pushRegistration] Navegador não suporta Web Push');
+      } else {
+        console.log('[pushRegistration] Erro:', e.name, e.message);
+      }
     }
   }
 
