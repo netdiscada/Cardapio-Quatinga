@@ -49,11 +49,11 @@
 
   // ===== Referências Firestore =====
   function senhaRef(rgf) {
-    return fb.db.collection('funcionarios_senhas').doc(rgf);
+    return fb.doc(global.db, 'funcionarios_senhas', rgf);
   }
 
   function lancamentosRef(rgf) {
-    return fb.db.collection('financas').doc(rgf).collection('lancamentos');
+    return fb.doc(global.db, 'financas', rgf).collection('lancamentos');
   }
 
   // ===== Telas =====
@@ -294,7 +294,7 @@
         valor: tipo === 'saida' ? -valor : valor,
         tipo,
         descricao,
-        createdAt: fb.Timestamp.now(),
+        createdAt: fb.serverTimestamp(),
       });
       global.showToast('Lançamento salvo!', 'success');
       document.getElementById('fin-add-valor').value = '';
