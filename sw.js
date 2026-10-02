@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v5';
+const CACHE_NAME = 'cardapio-v6';
 
 const CORE_ASSETS = [
   './',
@@ -7,7 +7,8 @@ const CORE_ASSETS = [
   './js/firebase.js',
   './js/db.js',
   './js/userhelp.js',
-  './js/financas.js'
+  './js/financas.js',
+  './js/notificationChecker.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,10 +31,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = request.url;
 
-  // Ignora Firebase (precisa de internet)
   if (url.includes('firebase') || url.includes('googleapis')) return;
-
-  // Ignora uploads
   if (request.method !== 'GET') return;
 
   event.respondWith(
