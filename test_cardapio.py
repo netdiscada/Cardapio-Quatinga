@@ -52,6 +52,17 @@ with sync_playwright() as p:
             pass
         time.sleep(2)
 
+        # Preenche senha se aparecer campo de senha
+        try:
+            senha = page.query_selector("#fin-senha-input, input[placeholder*='senha'], input[placeholder*='Senha']")
+            if senha:
+                senha.fill("9718")
+                page.keyboard.press("Enter")
+                time.sleep(3)
+                results["login_senha"] = True
+        except:
+            pass
+
     # 1. CARDÁPIO - conta itens
     try:
         page.click("[data-user-tab='menu']", timeout=5000, force=True)
