@@ -4,8 +4,8 @@ import time
 def main():
     with sync_playwright() as p:
         # Lança como um navegador de verdade
-        browser = p.chromium.launch(headless=True, viewport={'width': 1280, 'height': 800})
-        context = browser.new_context()
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 1280, "height": 800})
         page = context.new_page()
 
         print("== Teste Cardápio Quatinga ==")
