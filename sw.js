@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v6';
+const CACHE_NAME = 'cardapio-v7';
 
 const CORE_ASSETS = [
   './',
