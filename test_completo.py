@@ -1,7 +1,10 @@
 from playwright.sync_api import sync_playwright
 import time, json, os
 
-RESULT_FILE = "/home/runner/work/Cardapio-Quatinga/Cardapio-Quatinga/resultado_teste.json"
+import os, time, json
+
+RESULT_FILE = "/resultado_teste.json"
+os.makedirs(os.path.dirname(RESULT_FILE), exist_ok=True)
 
 results = {
     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
