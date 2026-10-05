@@ -37,11 +37,20 @@ with sync_playwright() as p:
     if rgf:
         rgf.fill("22823")
         results["login_ok"] = True
+        # Submete o form pra disparar a busca pelo RGF
         try:
             page.click("button[type='submit']", timeout=3000)
         except:
+            page.keyboard.press("Enter")
+        time.sleep(5)
+        
+        # Aguarda o nome ser preenchido automaticamente
+        try:
+            page.wait_for_selector("#employeeName:not([value=''])", state="visible", timeout=10000)
+            results["nome"] = page.query_selector("#employeeName").get_attribute("value")
+        except:
             pass
-        time.sleep(3)
+        time.sleep(2)
 
     # 1. CARDÁPIO - conta itens
     try:
@@ -60,9 +69,10 @@ with sync_playwright() as p:
         time.sleep(3)
         results["financas"]["abriu"] = page.is_visible("#user-financas-section")
         
-        # Tenta abrir modal
+        # Tenta abrir modal (botão está visível após abrir a seção)
         try:
-            page.click("#fin-novo-btn", timeout=3000)
+            page.wait_for_selector("#fin-novo-btn", state="visible", timeout=5000)
+            page.click("#fin-novo-btn", force=True)
             time.sleep(2)
             modal = page.is_visible("#fin-add-modal") or page.is_visible("[id*='modal']")
             results["financas"]["modal"] = modal
