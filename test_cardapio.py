@@ -56,7 +56,7 @@ with sync_playwright() as p:
                 try:
                     page.click(f"button:has-text('{btn_txt}')", timeout=2000)
                     log(f"Clicou no botão '{btn_txt}'", True)
-                    time.sleep(2)
+                    time.sleep(5)
                     break
                 except:
                     continue
@@ -64,16 +64,16 @@ with sync_playwright() as p:
             log("Login RGF", False, str(e)[:200])
 
         # 3. Aguarda a página principal carregar
-        time.sleep(3)
+        time.sleep(5)
 
         # 4. Testa aba Cardápio
         try:
-            cardapio_el = page.query_selector("text=Cardápio") or page.query_selector("text=🍔") or page.query_selector("[data-tab='cardapio']")
+            cardapio_el = page.query_selector("[data-user-tab='cardapio']") or page.query_selector("[data-user-tab='cardapio']") or page.query_selector("[data-tab='cardapio']")
             if cardapio_el:
                 cardapio_el.click()
-                time.sleep(2)
+                time.sleep(5)
                 # Verifica se algo do cardápio apareceu
-                if page.is_visible("text=Cardápio") or page.is_visible(".cardapio") or page.is_visible("#cardapio"):
+                if page.is_visible("#order-section") or page.is_visible(".cardapio") or page.is_visible("#cardapio"):
                     results["abas"]["cardapio"] = True
                     log("Aba Cardápio", True)
                 else:
@@ -86,10 +86,10 @@ with sync_playwright() as p:
 
         # 5. Testa aba Finanças
         try:
-            fin_el = page.query_selector("text=Finanças") or page.query_selector("text=🤑") or page.query_selector("[data-tab='financas']")
+            fin_el = page.query_selector("[data-user-tab='financas']") or page.query_selector("[data-user-tab='financas']") or page.query_selector("[data-tab='financas']")
             if fin_el:
                 fin_el.click()
-                time.sleep(2)
+                time.sleep(5)
                 results["abas"]["financas"] = True
                 log("Aba Finanças", True)
                 results["financas"]["abriu"] = True
@@ -113,10 +113,10 @@ with sync_playwright() as p:
 
         # 6. Testa aba Pagamentos
         try:
-            pag_el = page.query_selector("text=Pagamentos") or page.query_selector("text=📄") or page.query_selector("[data-tab='pagamentos']")
+            pag_el = page.query_selector("[data-user-tab='payment']") or page.query_selector("[data-user-tab='payment']") or page.query_selector("[data-tab='pagamentos']")
             if pag_el:
                 pag_el.click()
-                time.sleep(3)
+                time.sleep(5)
                 results["abas"]["pagamentos"] = True
                 results["pagamentos"]["abriu"] = True
                 log("Aba Pagamentos", True)
@@ -137,7 +137,7 @@ with sync_playwright() as p:
                 el = page.query_selector(f"text={aba_txt}")
                 if el:
                     el.click()
-                    time.sleep(2)
+                    time.sleep(5)
                     results["abas"]["perfil"] = True
                     log(f"Aba {aba_txt}", True)
                     page.screenshot(path="/tmp/perfil.png", full_page=True)
@@ -151,8 +151,8 @@ with sync_playwright() as p:
         # 9. Volta pro cardápio pra ver estado final
         try:
             page.click("text=🍔 Cardápio", timeout=5000)
-            time.sleep(2)
-            results["cardapio_visivel"] = page.is_visible("text=Cardápio")
+            time.sleep(5)
+            results["cardapio_visivel"] = page.is_visible("#order-section")
         except:
             pass
 
