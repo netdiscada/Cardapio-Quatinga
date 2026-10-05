@@ -41,7 +41,12 @@ with sync_playwright() as p:
         try:
             page.click(botao, timeout=5000)
             time.sleep(3)
-            visivel = page.is_visible(secao)
+            if nome == 'cardapio':
+                # Cardapio tem class='hidden' por padrão
+                hidden = page.query_selector('#order-section.hidden')
+                visivel = hidden is None  # Se não tem mais hidden, está visível
+            else:
+                visivel = page.is_visible(secao)
             results["abas"][nome] = visivel
             print(f"{'✓' if visivel else '✗'} {nome}")
         except Exception as e:
