@@ -39,7 +39,7 @@ with sync_playwright() as p:
 
     for nome, botao, secao in abas:
         try:
-            page.click(botao, timeout=5000)
+            page.click(botao, timeout=5000, force=True)
             time.sleep(3)
             if nome == 'cardapio':
                 # Cardapio tem class='hidden' por padrão
