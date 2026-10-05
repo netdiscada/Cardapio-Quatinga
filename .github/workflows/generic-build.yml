@@ -1,0 +1,53 @@
+name: Universal Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Comando completo a rodar (ex: python3 script.py, npm run build)'
+        required: true
+        default: 'echo Hello'
+      timeout:
+        description: 'Timeout em minutos'
+        required: true
+        default: '30'
+      script_file:
+        description: 'Caminho pro script (opcional, executa se existir)'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJSON(inputs.timeout) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python (se necessário)
+        uses: actions/setup-python@v5
+        if: contains(inputs.command, 'python') || contains(inputs.command, 'pip')
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node (se necessário)
+        uses: actions/setup-node@v4
+        if: contains(inputs.command, 'node') || contains(inputs.command, 'npm')
+
+      - name: Setup Java/Android (se necessário)
+        uses: actions/setup-java@v4
+        if: contains(inputs.command, 'gradle') || contains(inputs.command, './gradlew')
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run script
+        run: |
+          if [ -n "${{ inputs.script_file }}" ] && [ -f "${{ inputs.script_file }}" ]; then
+            echo "Rodando script: ${{ inputs.script_file }}"
+            bash "${{ inputs.script_file }}"
+          else
+            echo "Rodando comando: ${{ inputs.command }}"
+            ${{ inputs.command }}
+          fi
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
