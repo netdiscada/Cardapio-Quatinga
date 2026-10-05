@@ -1,4 +1,4 @@
-import os
+import os; os.makedirs(os.path.dirname("/home/runner/work/Cardapio-Quatinga/Cardapio-Quatinga/.auth/storage.json"), exist_ok=True)
 from playwright.sync_api import sync_playwright
 import time, json
 
