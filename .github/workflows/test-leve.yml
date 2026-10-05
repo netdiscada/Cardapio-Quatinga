@@ -11,8 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Run test
-        run: python3 test_completo.py
+      - name: Install Playwright
+        run: |
+          pip install playwright --quiet
+          playwright install chromium --with-deps
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
