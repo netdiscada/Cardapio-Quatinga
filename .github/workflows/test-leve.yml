@@ -6,7 +6,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/playwright/python:v1.63.0-jammy
+    container: python:3.12-slim
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
