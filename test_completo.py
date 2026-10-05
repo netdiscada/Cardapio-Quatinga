@@ -52,8 +52,9 @@ with sync_playwright() as p:
         time.sleep(3)
         results["financas"]["abriu"] = page.is_visible("#user-financas-section")
         
-        # Tenta senha
+        # Tenta senha (aguarda o campo aparecer)
         try:
+            page.wait_for_selector("#fin-senha-input", state="visible", timeout=10000)
             senha = page.query_selector("#fin-senha-input")
             if senha:
                 senha.fill("9718")
@@ -78,13 +79,17 @@ with sync_playwright() as p:
         time.sleep(3)
         results["pagamentos"]["abriu"] = page.is_visible("#user-payment-section")
         
-        # Preenche RGF
-        rgf = page.query_selector("#employeeRGF")
-        if rgf:
-            rgf.fill("22823")
-            rgf.press("Enter")
-            results["pagamentos"]["rgf"] = "22823"
-            time.sleep(2)
+        # Preenche RGF (aguarda o campo aparecer)
+        try:
+            page.wait_for_selector("#employeeRGF", state="visible", timeout=5000)
+            rgf = page.query_selector("#employeeRGF")
+            if rgf:
+                rgf.fill("22823")
+                rgf.press("Enter")
+                results["pagamentos"]["rgf"] = "22823"
+                time.sleep(2)
+        except Exception as e:
+            results["erros"].append(f"PAG-RGF: {str(e)[:100]}")
     except Exception as e:
         results["erros"].append(f"PAGAMENTOS: {str(e)[:100]}")
 
