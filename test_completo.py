@@ -36,8 +36,7 @@ with sync_playwright() as p:
     try:
         page.click("[data-user-tab='menu']", timeout=5000, force=True)
         time.sleep(3)
-        itens = page.query_selector_all(".order-item, .cardapio-item, [class*='item']
-")
+        itens = page.query_selector_all(".order-item, .cardapio-item, [class*='item']")
         results["cardapio"]["abriu"] = True
         results["cardapio"]["itens"] = len(itens)
         print(f"✓ Cardápio: {len(itens)} itens")
