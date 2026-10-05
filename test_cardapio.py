@@ -68,7 +68,7 @@ with sync_playwright() as p:
 
         # 4. Testa aba Cardápio
         try:
-            cardapio_el = page.query_selector("[data-user-tab='cardapio']") or page.query_selector("[data-user-tab='cardapio']") or page.query_selector("[data-tab='cardapio']")
+            cardapio_el = page.query_selector("[data-user-tab='menu']") or page.query_selector("[data-user-tab='menu']") or page.query_selector("[data-tab='cardapio']")
             if cardapio_el:
                 cardapio_el.click()
                 time.sleep(5)
