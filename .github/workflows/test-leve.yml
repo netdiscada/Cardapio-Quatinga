@@ -7,20 +7,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container: python:3.12-slim
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Playwright
+      - name: Install e run
         run: |
           pip install playwright --quiet
           playwright install chromium --with-deps
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          
-      - name: Upload resultado
-        uses: actions/upload-artifact@v4
-        with:
-          name: resultado-teste
-          path: /github/workflow/resultado_teste.json
+          python3 test_completo.py
+          cat resultado_teste.json 2>/dev/null || echo "Nao gerou"
