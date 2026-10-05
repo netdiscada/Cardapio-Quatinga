@@ -37,7 +37,10 @@ with sync_playwright() as p:
 
     try:
         # 1. Carrega o site
-        page.goto("https://netdiscada.github.io/Cardapio-Quatinga/", wait_until="networkidle", timeout=30000)
+        # Desabilita service workers para evitar cache antigo
+        page.route("**/sw.js", lambda route: route.fulfill(status=200, body="// noop"))
+        page.route("**/sw-*", lambda route: route.fulfill(status=200, body="// noop"))
+        page.goto("https://netdiscada.github.io/Cardapio-Quatinga/", wait_until="domcontentloaded", timeout=15000)
         results["site_carregou"] = True
         results["titulo"] = page.title()
         log("Site carregou", True, page.title())
