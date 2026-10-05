@@ -47,7 +47,7 @@ with sync_playwright() as p:
         # Aguarda o nome ser preenchido automaticamente
         try:
             page.wait_for_selector("#employeeName:not([value=''])", state="visible", timeout=10000)
-            results["nome"] = page.query_selector("#employeeName").get_attribute("value")
+            results["nome"] = page.query_selector("#employeeName").get_attribute("value") or ""
         except:
             pass
         time.sleep(2)
