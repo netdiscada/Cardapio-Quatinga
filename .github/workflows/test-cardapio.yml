@@ -1,0 +1,27 @@
+name: Test Cardapio Quatinga
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Run test
+        run: python3 test_cardapio.py
+        env:
+          URL: https://netdiscada.github.io/Cardapio-Quatinga/
+          RGF: "1601502320"
