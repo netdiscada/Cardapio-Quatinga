@@ -30,7 +30,15 @@ jobs:
 
       - name: Setup Node (se necessário)
         uses: actions/setup-node@v4
-        if: contains(inputs.command, 'node') || contains(inputs.command, 'npm')
+        if: contains(inputs.command, 'node') || contains(inputs.command, 'npm') || contains(inputs.command, 'npx')
+        with:
+          node-version: '22'
+
+      - name: Install Playwright (se necessário)
+        if: contains(inputs.command, 'playwright') || contains(inputs.command, 'browser') || contains(inputs.command, 'test')
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
 
       - name: Setup Java/Android (se necessário)
         uses: actions/setup-java@v4
@@ -51,3 +59,11 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Upload screenshots (se houver)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: '*.png'
+          if-no-files-found: warn
