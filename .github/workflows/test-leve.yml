@@ -1,0 +1,24 @@
+name: Teste E2E Leve
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.63.0-jammy
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run test
+        run: python3 test_completo.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          
+      - name: Upload resultado
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-teste
+          path: resultado_teste.json
