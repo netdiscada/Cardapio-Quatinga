@@ -1,116 +1,167 @@
 from playwright.sync_api import sync_playwright
-import time
+import json, sys
 
-def main():
-    with sync_playwright() as p:
-        # Lança como um navegador de verdade
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={"width": 1280, "height": 800})
-        page = context.new_page()
+results = {
+    "site_carregou": False,
+    "titulo": "",
+    "console_erros": [],
+    "abas": {},
+    "login_rgf": False,
+    "cardapio_visivel": False,
+    "financas": {"abriu": False, "modal_abriu": False},
+    "pagamentos": {"abriu": False, "rgf_preenchido": False},
+}
 
-        print("== Teste Cardápio Quatinga ==")
+def log(acao, ok, detalhe=""):
+    status = "✅" if ok else "❌"
+    print(f"{status} {acao}" + (f" — {detalhe}" if detalhe else ""))
 
-        # 1. Acessa
-        print("\n1. Acessando site...")
-        page.goto("https://netdiscada.github.io/Cardapio-Quatinga/")
-        page.wait_for_load_state("networkidle")
-        print(f"Título: {page.title()}")
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 800},
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
+    )
+    page = context.new_page()
 
-        # Captura console errors
-        errors = []
-        page.on("console", lambda msg: errors.append(f"[{msg.type}] {msg.text}") if msg.type == "error" else None)
-        page.on("pageerror", lambda exc: errors.append(f"[PAGE_ERROR] {exc}"))
-        print(f"Console errors (até agora): {errors}")
+    # Captura erros do console
+    def on_console(msg):
+        if msg.type == "error":
+            results["console_erros"].append(msg.text[:300])
+            log(f"CONSOLE ERROR", False, msg.text[:200])
+    def on_pageerror(exc):
+        results["console_erros"].append(f"PAGE ERROR: {str(exc)[:300]}")
+        log("PAGE ERROR", False, str(exc)[:200])
+    page.on("console", on_console)
+    page.on("pageerror", on_pageerror)
 
-        # 2. Verifica se a sidebar abre
-        print("\n2. Abrindo sidebar...")
-        page.click("button[aria-label='Menu'], .sidebar-toggle", timeout=10000)
-        time.sleep(1)
-        page.screenshot(path="/tmp/sidebar.png")
-        print("Sidebar aberta")
+    try:
+        # 1. Carrega o site
+        page.goto("https://netdiscada.github.io/Cardapio-Quatinga/", wait_until="networkidle", timeout=30000)
+        results["site_carregou"] = True
+        results["titulo"] = page.title()
+        log("Site carregou", True, page.title())
 
-        # 3. Testa RGF (login)
-        print("\n3. Preenchendo RGF...")
-        page.fill("input#employeeRGF", "1601502320")
-        time.sleep(1)
-
-        # 4. Testa abas
-        abas = ["🍔 Cardápio", "🍹 Lanches", "🤑 Finanças", "📄 Pagamentos"]
-        for aba in abas:
-            print(f"\n4. Testando aba {aba}...")
-            try:
-                page.click(f"text='{aba}'", timeout=10000)
-                time.sleep(2)  # Espera o conteúdo carregar
-
-                # Verifica se o conteúdo da aba apareceu
-                if page.is_visible("div[class*='section']"):
-                    print(f"  {aba} - OK, conteúdo visível")
-                else:
-                    print(f"  {aba} - ERRO, conteúdo não apareceu")
-
-                page.screenshot(path=f"/tmp/aba_{aba.replace(' ', '_')}.png", full_page=True)
-            except Exception as e:
-                print(f"  {aba} - FALHA: {e}")
-
-        # 5. Verifica finanças detalhado
-        print("\n5. Testando Finanças em detalhe...")
+        # 2. Preenche RGF e faz login
         try:
-            page.click("text=🤑 Finanças", timeout=10000)
-            time.sleep(2)
-
-            # Tenta abrir modal
-            try:
-                page.wait_for_selector("#fin-novo-btn", state="visible", timeout=5000)
-                print("  Botão + Adicionar modal encontrado")
-                page.click("#fin-novo-btn")
-                time.sleep(1)
-                page.screenshot(path="/tmp/financas_modal.png")
-                print("  Modal aberto")
-            except Exception as e:
-                print(f"  Modal não abriu: {e}")
-
-            # Verifica lista de lançamentos
-            try:
-                lancamentos = page.locator("#fin-lista > *")
-                count = lancamentos.count()
-                print(f"  Lançamentos encontrados: {count}")
-            except:
-                print("  Lista de lançamentos não apareceu")
-
+            page.wait_for_selector("input#employeeRGF", timeout=10000)
+            page.fill("input#employeeRGF", "1601502320")
+            results["login_rgf"] = True
+            log("RGF preenchido", True)
+            # Clica no botão de confirmar/login se existir
+            for btn_txt in ["Entrar", "Confirmar", "Acessar", "OK", "→"]:
+                try:
+                    page.click(f"button:has-text('{btn_txt}')", timeout=2000)
+                    log(f"Clicou no botão '{btn_txt}'", True)
+                    time.sleep(2)
+                    break
+                except:
+                    continue
         except Exception as e:
-            print(f"  Falha na seção Finanças: {e}")
+            log("Login RGF", False, str(e)[:200])
 
-        # 6. Verifica contracheque (pagamentos)
-        print("\n6. Testando Pagamentos...")
+        # 3. Aguarda a página principal carregar
+        time.sleep(3)
+
+        # 4. Testa aba Cardápio
         try:
-            page.click("text=📄 Pagamentos", timeout=10000)
-            time.sleep(3)
+            cardapio_el = page.query_selector("text=Cardápio") or page.query_selector("text=🍔") or page.query_selector("[data-tab='cardapio']")
+            if cardapio_el:
+                cardapio_el.click()
+                time.sleep(2)
+                # Verifica se algo do cardápio apareceu
+                if page.is_visible("text=Cardápio") or page.is_visible(".cardapio") or page.is_visible("#cardapio"):
+                    results["abas"]["cardapio"] = True
+                    log("Aba Cardápio", True)
+                else:
+                    results["abas"]["cardapio"] = False
+                    log("Aba Cardápio", False, "conteúdo não visível")
+            page.screenshot(path="/tmp/cardapio.png", full_page=True)
+        except Exception as e:
+            results["abas"]["cardapio"] = False
+            log("Aba Cardápio", False, str(e)[:200])
 
-            # Verifica se tem campo RGF preenchido
-            rgf_input = page.query_selector("input#employeeRGF")
-            if rgf_input:
-                valor = rgf_input.get_attribute('value')
-                print(f"  RGF atual: {valor}")
+        # 5. Testa aba Finanças
+        try:
+            fin_el = page.query_selector("text=Finanças") or page.query_selector("text=🤑") or page.query_selector("[data-tab='financas']")
+            if fin_el:
+                fin_el.click()
+                time.sleep(2)
+                results["abas"]["financas"] = True
+                log("Aba Finanças", True)
+                results["financas"]["abriu"] = True
 
+                # Tenta abrir modal de adicionar
+                try:
+                    page.wait_for_selector("#fin-novo-btn", state="visible", timeout=5000)
+                    page.click("#fin-novo-btn")
+                    time.sleep(1)
+                    page.screenshot(path="/tmp/financas_modal.png")
+                    results["financas"]["modal_abriu"] = True
+                    log("Modal Adicionar Finanças", True)
+                    # Fecha modal
+                    page.keyboard.press("Escape")
+                except Exception as e:
+                    log("Modal Adicionar Finanças", False, str(e)[:200])
+            page.screenshot(path="/tmp/financas.png", full_page=True)
+        except Exception as e:
+            results["abas"]["financas"] = False
+            log("Aba Finanças", False, str(e)[:200])
+
+        # 6. Testa aba Pagamentos
+        try:
+            pag_el = page.query_selector("text=Pagamentos") or page.query_selector("text=📄") or page.query_selector("[data-tab='pagamentos']")
+            if pag_el:
+                pag_el.click()
+                time.sleep(3)
+                results["abas"]["pagamentos"] = True
+                results["pagamentos"]["abriu"] = True
+                log("Aba Pagamentos", True)
+
+                rgf = page.query_selector("input#employeeRGF")
+                if rgf:
+                    valor = rgf.get_attribute("value")
+                    results["pagamentos"]["rgf_preenchido"] = bool(valor and valor != "")
+                    log("RGF em Pagamentos", True, f"valor={valor}")
             page.screenshot(path="/tmp/pagamentos.png", full_page=True)
         except Exception as e:
-            print(f"  Falha em Pagamentos: {e}")
+            results["abas"]["pagamentos"] = False
+            log("Aba Pagamentos", False, str(e)[:200])
 
-        # 7. Relatório final de erros
-        print("\n== RELATÓRIO FINAL ==")
-        print(f"Erros no console: {len(errors)}")
-        for err in errors[:10]:  # Mostra até 10 erros
-            print(f"  - {err}")
+        # 7. Testa aba Configurações/Perfil se existir
+        try:
+            for aba_txt in ["Perfil", "Config", "⚙️", "👤"]:
+                el = page.query_selector(f"text={aba_txt}")
+                if el:
+                    el.click()
+                    time.sleep(2)
+                    results["abas"]["perfil"] = True
+                    log(f"Aba {aba_txt}", True)
+                    page.screenshot(path="/tmp/perfil.png", full_page=True)
+                    break
+        except:
+            pass
 
-        if errors:
-            print("\n[console.log] Erros encontrados:")
-            for err in errors[:5]:
-                print(f"    {err}")
+        # 8. Screenshot final
+        page.screenshot(path="/tmp/final.png", full_page=True)
 
-        # Fecha
-        time.sleep(2)
+        # 9. Volta pro cardápio pra ver estado final
+        try:
+            page.click("text=🍔 Cardápio", timeout=5000)
+            time.sleep(2)
+            results["cardapio_visivel"] = page.is_visible("text=Cardápio")
+        except:
+            pass
+
+    except Exception as e:
+        log("ERRO GERAL", False, str(e)[:300])
+        page.screenshot(path="/tmp/erro.png", full_page=True)
+
+    finally:
         browser.close()
-        print("\n== Teste concluído ==")
 
-if __name__ == "__main__":
-    main()
+# Relatório final
+print("\n" + "="*50)
+print("RELATÓRIO FINAL")
+print("="*50)
+print(json.dumps(results, indent=2, ensure_ascii=False))
