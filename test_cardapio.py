@@ -1,5 +1,10 @@
 from playwright.sync_api import sync_playwright
-import time
+import time, json, os
+
+RESULT_FILE = "/home/runner/work/Cardapio-Quatinga/Cardapio-Quatinga/resultado_teste.json"
+STORAGE_FILE = "/home/runner/work/Cardapio-Quatinga/Cardapio-Quatinga/.auth/storage.json"
+
+os.makedirs(os.path.dirname(STORAGE_FILE), exist_ok=True)
 
 results = {
     "site_carregou": False,
@@ -11,7 +16,15 @@ results = {
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
-    context = browser.new_context(viewport={"width": 1280, "height": 800})
+    
+    # Tenta carregar storage salvo de execuções anteriores
+    context = None
+    if os.path.exists(STORAGE_FILE):
+        print("Carregando storage salvo...")
+        context = browser.new_context(storage_state=STORAGE_FILE)
+    else:
+        context = browser.new_context(viewport={"width": 1280, "height": 800})
+    
     page = context.new_page()
 
     def on_console(msg):
@@ -24,13 +37,29 @@ with sync_playwright() as p:
     results["site_carregou"] = True
     results["titulo"] = page.title()
 
+    # Salva storage pra próxima execução
+    context.storage_state(path=STORAGE_FILE)
+    print(f"Storage salvo em {STORAGE_FILE}")
+
     # Login RGF
     rgf = page.query_selector("#employeeRGF")
     if rgf:
-        rgf.fill("1601502320")
+        rgf.fill("22823")
         results["login_rgf"] = True
+        # Tenta submeter o form
+        try:
+            page.click("button[type='submit']", timeout=3000)
+        except:
+            try:
+                page.click("button:has-text('Entrar')", timeout=3000)
+            except:
+                try:
+                    page.click("button:has-text('Acessar')", timeout=3000)
+                except:
+                    pass  # Pode não ter botão visível
+        time.sleep(3)
 
-    # Testa abas clicando
+    # Testa abas
     abas = [
         ("cardapio", "[data-user-tab='menu']", "#order-section"),
         ("financas", "[data-user-tab='financas']", "#user-financas-section"),
@@ -41,19 +70,20 @@ with sync_playwright() as p:
         try:
             page.click(botao, timeout=5000, force=True)
             time.sleep(3)
-            if nome == 'cardapio':
-                # Cardapio tem class='hidden' por padrão
-                hidden = page.query_selector('#order-section.hidden')
-                visivel = hidden is None  # Se não tem mais hidden, está visível
-            else:
-                visivel = page.is_visible(secao)
+            visivel = page.is_visible(secao)
             results["abas"][nome] = visivel
-            print(f"{'✓' if visivel else '✗'} {nome}")
+            status = "✓" if visivel else "✗"
+            print(f"{status} {nome}")
         except Exception as e:
             results["abas"][nome] = False
-            print(f"✗ {nome} — {str(e)[:100]}")
+            print(f"✗ {nome} — {str(e)[:80]}")
 
+    page.screenshot(path="/tmp/cardapio_final.png", full_page=True)
     browser.close()
 
-print(f"\nSite: {results['site_carregou']} | Título: {results['titulo']}")
-print(f"RGF: {results['login_rgf']} | Erros console: {len(results['console_erros'])}")
+# Salva resultado
+with open(RESULT_FILE, "w") as f:
+    json.dump(results, f, indent=2)
+
+print(f"\n=== RESULTADO ===")
+print(json.dumps(results, indent=2))
