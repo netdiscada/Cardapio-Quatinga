@@ -17,6 +17,9 @@ results = {
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
+    # Garante que a pasta existe
+    os.makedirs(os.path.dirname(STORAGE_FILE), exist_ok=True)
+    
     context = browser.new_context(storage_state=STORAGE_FILE) if os.path.exists(STORAGE_FILE) else browser.new_context(viewport={"width": 1280, "height": 800})
     page = context.new_page()
 
