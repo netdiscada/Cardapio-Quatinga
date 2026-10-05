@@ -23,4 +23,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: resultado-teste
-          path: resultado_teste.json
+          path: /github/workflow/resultado_teste.json
