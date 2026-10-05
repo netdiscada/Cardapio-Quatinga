@@ -104,9 +104,17 @@ with sync_playwright() as p:
         page.click("[data-user-tab='payment']", timeout=5000, force=True)
         time.sleep(3)
         results["pagamentos"]["abriu"] = page.is_visible("#user-payment-section")
+        # Preenche RGF (novamente, pois pode ter sido limpo)
         rgf_input = page.query_selector("#employeeRGF")
         if rgf_input:
-            results["pagamentos"]["rgf"] = rgf_input.get_attribute("value") or ""
+            rg = rgf_input.get_attribute("value") or ""
+            if not rg:
+                rgf_input.fill("22823")
+                page.keyboard.press("Enter")
+                time.sleep(2)
+                results["pagamentos"]["rgf"] = rgf_input.get_attribute("value") or ""
+            else:
+                results["pagamentos"]["rgf"] = rg
         print(f"Pagamentos: RGF={results['pagamentos']['rgf']}")
     except Exception as e:
         results["erros"].append(f"PAGAMENTOS: {str(e)[:100]}")
