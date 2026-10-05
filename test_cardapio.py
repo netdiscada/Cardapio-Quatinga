@@ -107,12 +107,6 @@ with sync_playwright() as p:
         rgf_input = page.query_selector("#employeeRGF")
         if rgf_input:
             results["pagamentos"]["rgf"] = rgf_input.get_attribute("value") or ""
-            # Se vazio, preenche de novo
-            if not results["pagamentos"]["rgf"]:
-                rgf_input.fill("22823")
-                page.keyboard.press("Enter")
-                time.sleep(2)
-                results["pagamentos"]["rgf"] = rgf_input.get_attribute("value") or ""
         print(f"Pagamentos: RGF={results['pagamentos']['rgf']}")
     except Exception as e:
         results["erros"].append(f"PAGAMENTOS: {str(e)[:100]}")
