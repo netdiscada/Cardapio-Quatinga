@@ -106,8 +106,10 @@
       }
     });
     
+    const MES_NOME = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    
     let calendarHtml = '<div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">';
-    calendarHtml += `<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm text-center">📅 ${months[mesAtual]} ${anoAtualNum}</h3>`;
+    calendarHtml += `<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm text-center">📅 ${MES_NOME[mesAtual]} ${anoAtualNum}</h3>`;
     calendarHtml += '<div class="grid grid-cols-7 gap-1 text-center text-xs">';
     calendarHtml += '<div class="font-bold text-gray-500">Dom</div><div class="font-bold text-gray-500">Seg</div><div class="font-bold text-gray-500">Ter</div><div class="font-bold text-gray-500">Qua</div><div class="font-bold text-gray-500">Qui</div><div class="font-bold text-gray-500">Sex</div><div class="font-bold text-gray-500">Sáb</div>';
     
