@@ -89,27 +89,53 @@
       </div>` + html;
     }
     
-    // Calendário visual de feriados (2026)
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    let calendarHtml = '<div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">';
-    calendarHtml += '<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">📅 Calendário de Feriados 2026</h3>';
-    calendarHtml += '<div class="grid grid-cols-2 gap-2">';
+    // Calendário visual interativo do mês atual
+    const mesAtual = hoje.getMonth();
+    const anoAtualNum = hoje.getFullYear();
+    const diasNoMes = new Date(anoAtualNum, mesAtualNum + 1, 0).getDate();
+    const primeiroDia = new Date(anoAtualNum, mesAtualNum, 1).getDay(); // 0=domingo
     
-    months.forEach((mes, idx) => {
-      calendarHtml += `<div class="text-center p-2 rounded-lg border ${hoje.getMonth() === idx ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-zinc-800'}">`;
-      calendarHtml += `<p class="text-xs font-bold text-gray-600 dark:text-gray-400">${mes}</p>`;
-      // Marca feriados do mês
-      const feriadosDoMes = HOLIDAYS_2026.filter(f => {
-        const parts = f.data.split('/');
-        return parseInt(parts[1], 10) === idx + 1;
-      });
-      if (feriadosDoMes.length > 0) {
-        calendarHtml += `<p class="text-[10px] text-red-600 dark:text-red-400 font-bold mt-1">${feriadosDoMes.length} feriado(s)</p>`;
+    // Mapeia feriados do mês atual
+    const feriadosMes = {};
+    HOLIDAYS_2026.forEach(f => {
+      const parts = f.data.split('/');
+      const mesF = parseInt(parts[1], 10) - 1;
+      if (mesF === mesAtual) {
+        const diaF = parseInt(parts[0], 10);
+        feriadosMes[diaF] = f;
       }
-      calendarHtml += '</div>';
     });
     
+    let calendarHtml = '<div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">';
+    calendarHtml += `<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm text-center">📅 ${months[mesAtual]} ${anoAtualNum}</h3>`;
+    calendarHtml += '<div class="grid grid-cols-7 gap-1 text-center text-xs">';
+    calendarHtml += '<div class="font-bold text-gray-500">Dom</div><div class="font-bold text-gray-500">Seg</div><div class="font-bold text-gray-500">Ter</div><div class="font-bold text-gray-500">Qua</div><div class="font-bold text-gray-500">Qui</div><div class="font-bold text-gray-500">Sex</div><div class="font-bold text-gray-500">Sáb</div>';
+    
+    // Dias vazios antes do dia 1
+    for (let i = 0; i < primeiroDia; i++) {
+      calendarHtml += '<div class="p-1"></div>';
+    }
+    
+    // Dias do mês
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      const isFeriado = feriadosMes[dia];
+      const isHoje = dia === hoje.getDate() && mesAtual === hoje.getMonth() && anoAtualNum === hoje.getFullYear();
+      
+      let classes = 'p-1 rounded ';
+      if (isHoje) classes += 'bg-blue-600 text-white font-bold ';
+      else if (isFeriado) classes += 'bg-red-500 text-white font-bold ';
+      else classes += 'text-gray-700 dark:text-gray-300 ';
+      
+      calendarHtml += `<div class="${classes}" title="${isFeriado ? isFeriado.evento : ''}">${dia}</div>`;
+    }
+    
+    calendarHtml += '</div>';
+    // Legenda
+    calendarHtml += '<div class="flex gap-3 mt-3 text-[10px] justify-center">';
+    calendarHtml += '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span> Hoje</span>';
+    calendarHtml += '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Feriado</span>';
     calendarHtml += '</div></div>';
+    
     html = calendarHtml + html;
     
     listEl.innerHTML = html;
