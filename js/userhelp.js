@@ -46,8 +46,8 @@
     { mes: 'Agosto', pag: 6, adi: 20 },
     { mes: 'Setembro', pag: 4, adi: 18 },
     { mes: 'Outubro', pag: 6, adi: 20 },
-    { mes: 'Novembro', pag: 6, adi: 19, decimo: 28 }, // 1ª parcela 13º (até 30/11)
-    { mes: 'Dezembro', pag: 6, adi: 18, decimo: 19 }  // 2ª parcela 13º (até 20/12)
+    { mes: 'Novembro', pag: 6, adi: 19, decimo: 13 }, // 1ª parcela 13º (oficial: 13/11)
+    { mes: 'Dezembro', pag: 4, adi: 18, decimo: 11 }  // 2ª parcela 13º (oficial: 11/12)
   ];
 
   const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
