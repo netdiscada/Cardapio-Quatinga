@@ -191,16 +191,19 @@
       <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
     `;
 
-    // Event listeners para navegação
-    listEl.querySelector('#cal-prev')?.addEventListener('click', () => {
-      currentMonth--;
-      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-      document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
-    });
-    listEl.querySelector('#cal-next')?.addEventListener('click', () => {
-      currentMonth++;
-      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-      document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
+    // Event delegation no container que NÃO é recriado
+    listEl.addEventListener('click', (e) => {
+      const prevBtn = e.target.closest('#cal-prev');
+      const nextBtn = e.target.closest('#cal-next');
+      if (prevBtn) {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
+      } else if (nextBtn) {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
+      }
     });
   }
 
