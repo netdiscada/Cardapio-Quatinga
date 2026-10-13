@@ -380,16 +380,28 @@
       const pdfBlob = doc.output('blob');
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'Cardápio Quatinga',
-          text: 'Segue em anexo o relatório de pedidos.',
-          files: [file]
-        });
-        showToast("Compartilhamento aberto com sucesso!", "success");
+      // Tenta Web Share API (funciona em alguns Android)
+      const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+      
+      if (canShareFiles) {
+        try {
+          await navigator.share({
+            title: 'Cardápio Quatinga',
+            text: 'Segue em anexo o relatório de pedidos.',
+            files: [file]
+          });
+          showToast("Compartilhamento aberto!", "success");
+        } catch (e) {
+          // Fallback silencioso
+          downloadAndOpenPdf(pdfBlob, fileName);
+        }
       } else {
-        showToast("Baixando PDF...", "info");
-        doc.save(fileName);
+        // No APK nativo, tenta usar FileSystem + Share do Capacitor
+        if (global.Capacitor?.isNativePlatform && global.Capacitor.Plugins?.Share) {
+          downloadAndShareViaCapacitor(pdfBlob, fileName);
+        } else {
+          downloadAndOpenPdf(pdfBlob, fileName);
+        }
       }
     } catch (error) {
       console.error("Erro na geração do PDF:", error);
@@ -733,4 +745,60 @@
   global.bindEmployeeSearchHandler = bindEmployeeSearchHandler;
   global.renderHolidayCheckboxes = renderHolidayCheckboxes;
   global.bindRgfConsultHandler = bindRgfConsultHandler;
+
+  // ===== Helpers para PDF =====
+  async function downloadAndShareViaCapacitor(pdfBlob, fileName) {
+    try {
+      const { Filesystem, Directory, Encoding, Share } = global.Capacitor.Plugins;
+      const base64 = await blobToBase64(pdfBlob);
+      
+      // Salva no cache do app
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8
+      });
+      
+      // Pega URI do arquivo
+      const fileUri = await Filesystem.getUri({
+        directory: Directory.Cache,
+        path: fileName
+      });
+      
+      // Compartilha via Share nativo
+      await Share.share({
+        title: 'Cardápio Quatinga',
+        text: 'Segue em anexo o relatório de pedidos.',
+        url: fileUri.uri,
+        dialogTitle: 'Compartilhar PDF'
+      });
+      showToast("Compartilhamento aberto!", "success");
+    } catch (e) {
+      console.error('[admin] Erro Capacitor Share:', e);
+      downloadAndOpenPdf(pdfBlob, fileName);
+    }
+  }
+
+  function downloadAndOpenPdf(pdfBlob, fileName) {
+    // Download direto
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("PDF baixado! Abra na pasta Downloads.", "success");
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
 })(window);
