@@ -46,8 +46,8 @@
     { mes: 'Agosto', pag: 6, adi: 20 },
     { mes: 'Setembro', pag: 4, adi: 18 },
     { mes: 'Outubro', pag: 6, adi: 20 },
-    { mes: 'Novembro', pag: 6, adi: 19 },
-    { mes: 'Dezembro', pag: 6, adi: 18 }
+    { mes: 'Novembro', pag: 6, adi: 19, decimo: 28 }, // 1ª parcela 13º (até 30/11)
+    { mes: 'Dezembro', pag: 6, adi: 18, decimo: 19 }  // 2ª parcela 13º (até 20/12)
   ];
 
   const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -219,11 +219,20 @@
       if (!passou && !proximo) proximo = { ...p, idx: i };
       const isCurrentMonth = hoje.getMonth() === i && hoje.getFullYear() === 2026;
       const destaque = isCurrentMonth ? ' ring-2 ring-green-400' : (passou ? ' opacity-50' : '');
+      
+      let decimoHtml = '';
+      if (p.decimo) {
+        const dDec = new Date(2026, i, p.decimo);
+        const passouDec = dDec < hoje;
+        decimoHtml = `<span class="font-bold text-amber-700 dark:text-amber-400${passouDec ? ' opacity-50' : ''}" title="13º Salário">🎁 ${String(p.decimo).padStart(2, '0')}</span>`;
+      }
+      
       html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
         <p class="font-bold text-sm text-gray-800 dark:text-gray-100">${p.mes}</p>
         <div class="flex gap-3 text-sm">
           <span class="font-bold text-green-700 dark:text-green-400">💵 ${String(p.pag).padStart(2, '0')}</span>
           <span class="font-bold text-blue-600 dark:text-blue-400">⏩ ${String(p.adi).padStart(2, '0')}</span>
+          ${decimoHtml}
         </div>
       </div>`;
     });
@@ -240,6 +249,29 @@
         <p class="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">Dia ${String(target.getDate()).padStart(2, '0')}/${MES_ABREV[target.getMonth()]}</p>
         <p class="text-xs text-green-600 dark:text-green-400 mt-1 font-semibold">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>`;
       nextEl.classList.remove('hidden');
+    }
+    
+    // Próximo 13º (se houver)
+    const proximoDecimo = PAYMENT_2026
+      .map((p, i) => ({ ...p, idx: i }))
+      .filter(p => p.decimo)
+      .find(p => new Date(2026, p.idx, p.decimo) >= hoje);
+    if (proximoDecimo) {
+      const dDec = new Date(2026, proximoDecimo.idx, proximoDecimo.decimo);
+      const dias = Math.ceil((dDec - hoje) / 86400000);
+      const isPrimeira = proximoDecimo.idx === 10; // Novembro
+      const label = isPrimeira ? '1ª parcela 13º' : '2ª parcela 13º';
+      if (!document.getElementById('user-next-decimo')) {
+        // Cria elemento se não existir
+        const decimoEl = document.createElement('div');
+        decimoEl.id = 'user-next-decimo';
+        decimoEl.className = 'hidden rounded-xl p-4 mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 text-center';
+        nextEl.parentNode.insertBefore(decimoEl, nextEl.nextSibling);
+      }
+      document.getElementById('user-next-decimo').innerHTML = `<p class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Próximo ${label}</p>
+        <p class="text-2xl font-bold text-amber-800 dark:text-amber-300 mt-1">Dia ${String(dDec.getDate()).padStart(2, '0')}/${MES_ABREV[dDec.getMonth()]}</p>
+        <p class="text-xs text-amber-700 dark:text-amber-400 mt-1 font-semibold">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>`;
+      document.getElementById('user-next-decimo').classList.remove('hidden');
     }
   }
 
