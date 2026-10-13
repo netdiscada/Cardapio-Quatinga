@@ -766,7 +766,7 @@
         path: fileName
       });
       
-      // Compartilha via Share nativo
+      // Compartilha via Share nativo do Capacitor (funciona no Android nativo)
       await Share.share({
         title: 'Cardápio Quatinga',
         text: 'Segue em anexo o relatório de pedidos.',
