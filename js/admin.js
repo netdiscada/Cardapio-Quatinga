@@ -751,46 +751,54 @@
       const { Filesystem, Directory, Encoding, Share, AppLauncher } = global.Capacitor.Plugins;
       const base64 = await blobToBase64(pdfBlob);
       
-      // Estratégia 1: Salva em External/Downloads (mais acessível pelo FileProvider)
+      console.log('[PDF Share] Iniciando compartilhamento:', fileName);
+      
+      // Estratégia 1: Directory.External (Downloads público) + Share
       try {
+        console.log('[PDF Share] Estratégia 1: Directory.External');
         await Filesystem.writeFile({
           path: fileName,
           data: base64,
-          directory: Directory.External,  // Downloads público
+          directory: Directory.External,
           encoding: Encoding.UTF8
         });
+        console.log('[PDF Share] Arquivo salvo em External');
         
         const fileUri = await Filesystem.getUri({
           directory: Directory.External,
           path: fileName
         });
+        console.log('[PDF Share] URI obtida:', fileUri.uri);
         
-        // Tenta Share nativo
         await Share.share({
           title: 'Cardápio Quatinga',
           text: 'Segue em anexo o relatório de pedidos.',
           url: fileUri.uri,
           dialogTitle: 'Compartilhar PDF'
         });
+        console.log('[PDF Share] Share OK');
         showToast("Compartilhamento aberto!", "success");
         return;
       } catch (err1) {
-        console.warn('[admin] Estratégia 1 (External) falhou:', err1.message);
+        console.error('[PDF Share] Estratégia 1 FALHOU:', err1.message, err1);
       }
       
-      // Estratégia 2: Salva em Documents
+      // Estratégia 2: Directory.Documents + Share
       try {
+        console.log('[PDF Share] Estratégia 2: Directory.Documents');
         await Filesystem.writeFile({
           path: fileName,
           data: base64,
           directory: Directory.Documents,
           encoding: Encoding.UTF8
         });
+        console.log('[PDF Share] Arquivo salvo em Documents');
         
         const fileUri = await Filesystem.getUri({
           directory: Directory.Documents,
           path: fileName
         });
+        console.log('[PDF Share] URI obtida:', fileUri.uri);
         
         await Share.share({
           title: 'Cardápio Quatinga',
@@ -798,29 +806,33 @@
           url: fileUri.uri,
           dialogTitle: 'Compartilhar PDF'
         });
+        console.log('[PDF Share] Share OK');
         showToast("Compartilhamento aberto!", "success");
         return;
       } catch (err2) {
-        console.warn('[admin] Estratégia 2 (Documents) falhou:', err2.message);
+        console.error('[PDF Share] Estratégia 2 FALHOU:', err2.message, err2);
       }
       
       // Estratégia 3: AppLauncher com intent ACTION_VIEW
       try {
-        // Tenta usar a URI da estratégia 1 ou 2
+        console.log('[PDF Share] Estratégia 3: AppLauncher');
         const fileUri = await Filesystem.getUri({
           directory: Directory.External,
           path: fileName
         });
+        console.log('[PDF Share] URI para AppLauncher:', fileUri.uri);
         
         await AppLauncher.openUrl({ url: fileUri.uri });
+        console.log('[PDF Share] AppLauncher OK');
         showToast("Seletor de apps aberto!", "success");
         return;
       } catch (err3) {
-        console.warn('[admin] Estratégia 3 (AppLauncher) falhou:', err3.message);
+        console.error('[PDF Share] Estratégia 3 FALHOU:', err3.message, err3);
       }
       
       // Estratégia 4: Web Share API nativa (blob)
       try {
+        console.log('[PDF Share] Estratégia 4: Web Share API');
         const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
@@ -828,17 +840,21 @@
             text: 'Segue em anexo o relatório de pedidos.',
             files: [file]
           });
+          console.log('[PDF Share] Web Share OK');
           showToast("Compartilhamento aberto!", "success");
           return;
+        } else {
+          console.log('[PDF Share] Web Share API não suporta files');
         }
       } catch (err4) {
-        console.warn('[admin] Estratégia 4 (Web Share) falhou:', err4.message);
+        console.error('[PDF Share] Estratégia 4 FALHOU:', err4.message, err4);
       }
       
       // Último fallback: download direto
+      console.log('[PDF Share] Todas falharam, fallback download direto');
       downloadAndOpenPdf(pdfBlob, fileName);
     } catch (e) {
-      console.error('[admin] Erro geral no share:', e);
+      console.error('[PDF Share] Erro geral:', e);
       downloadAndOpenPdf(pdfBlob, fileName);
     }
   }
