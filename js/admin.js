@@ -380,25 +380,24 @@
       const pdfBlob = doc.output('blob');
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // Tenta Web Share API (funciona em alguns Android)
-      const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
-      
-      if (canShareFiles) {
-        try {
-          await navigator.share({
-            title: 'Cardápio Quatinga',
-            text: 'Segue em anexo o relatório de pedidos.',
-            files: [file]
-          });
-          showToast("Compartilhamento aberto!", "success");
-        } catch (e) {
-          // Fallback silencioso
-          downloadAndOpenPdf(pdfBlob, fileName);
-        }
+      // No APK nativo, SEMPRE usa Capacitor Share (mais confiável)
+      if (global.Capacitor?.isNativePlatform && global.Capacitor.Plugins?.Share) {
+        downloadAndShareViaCapacitor(pdfBlob, fileName);
       } else {
-        // No APK nativo, tenta usar FileSystem + Share do Capacitor
-        if (global.Capacitor?.isNativePlatform && global.Capacitor.Plugins?.Share) {
-          downloadAndShareViaCapacitor(pdfBlob, fileName);
+        // PWA/Web: tenta Web Share API com files
+        const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+        
+        if (canShareFiles) {
+          try {
+            await navigator.share({
+              title: 'Cardápio Quatinga',
+              text: 'Segue em anexo o relatório de pedidos.',
+              files: [file]
+            });
+            showToast("Compartilhamento aberto!", "success");
+          } catch (e) {
+            downloadAndOpenPdf(pdfBlob, fileName);
+          }
         } else {
           downloadAndOpenPdf(pdfBlob, fileName);
         }
