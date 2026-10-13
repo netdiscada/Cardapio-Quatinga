@@ -300,22 +300,52 @@
       if (!resp.ok) return null;
       const data = await resp.json();
       if (!data.results) return null;
-      // Procura folha de 13º (tipo_folha pode conter "13" ou "Décimo")
+      console.log('[13º] Folhas encontradas:', data.results.map(r => ({ tipo: r.tipo_folha, mes: r.mes, ano: r.ano, id: r.idfunselec })));
+      
+      // Procura folha de 13º (busca mais ampla)
       const decimo = data.results.find(r => 
-        r.tipo_folha && (r.tipo_folha.includes('13') || r.tipo_folha.toLowerCase().includes('decimo') || r.tipo_folha.toLowerCase().includes('décimo'))
+        r.tipo_folha && (
+          r.tipo_folha.includes('13') || 
+          r.tipo_folha.toLowerCase().includes('decimo') || 
+          r.tipo_folha.toLowerCase().includes('décimo') ||
+          r.tipo_folha.toLowerCase().includes('decimo terceiro') ||
+          r.tipo_folha.toLowerCase().includes('13º') ||
+          r.tipo_folha.toLowerCase().includes('decimo terceiro salario')
+        )
       );
-      if (!decimo) return null;
-      // Busca detalhes do 13º
-      const respDet = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${decimo.idfunselec}`);
+      
+      // Fallback: se não achou por tipo, tenta achar por mês (dezembro/janeiro costuma ser 13º)
+      if (!decimo) {
+        const candidatos = data.results.filter(r => r.mes === 12 || r.mes === 1);
+        if (candidatos.length > 0) {
+          console.log('[13º] Fallback: usando folha de dez/jan como candidato a 13º', candidatos);
+          // Pega a mais recente
+          candidatos.sort((a, b) => (b.ano * 12 + b.mes) - (a.ano * 12 + a.mes));
+          return await fetchDecimoTerceiroDetalhe(candidatos[0]);
+        }
+        return null;
+      }
+      
+      return await fetchDecimoTerceiroDetalhe(decimo);
+    } catch (e) {
+      console.error('[13º] Erro:', e);
+      return null;
+    }
+  }
+
+  async function fetchDecimoTerceiroDetalhe(folha) {
+    try {
+      const respDet = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${folha.idfunselec}`);
       if (respDet.ok) {
         const det = await respDet.json();
         if (det.results && det.results.length > 0) {
           const liquido = det.results.reduce((acc, v) => acc + (v.tipoVerba === 'Rendimentos' ? parseFloat(v.valorverba) : -parseFloat(v.valorverba)), 0);
-          return { competencia: `${MES_ABREV[(decimo.mes || 1) - 1]}/${decimo.ano}`, liquido, verbas: det.results };
+          return { competencia: `${MES_ABREV[(folha.mes || 1) - 1]}/${folha.ano}`, liquido, verbas: det.results };
         }
       }
-      return { competencia: `${MES_ABREV[(decimo.mes || 1) - 1]}/${decimo.ano}`, liquido: parseFloat(decimo.liquido), verbas: [] };
+      return { competencia: `${MES_ABREV[(folha.mes || 1) - 1]}/${folha.ano}`, liquido: parseFloat(folha.liquido), verbas: [] };
     } catch (e) {
+      console.error('[13º] Erro ao buscar detalhe:', e);
       return null;
     }
   }
