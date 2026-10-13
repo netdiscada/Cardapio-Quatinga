@@ -751,22 +751,21 @@
       const { Filesystem, Directory, Encoding, Share, AppLauncher } = global.Capacitor.Plugins;
       const base64 = await blobToBase64(pdfBlob);
       
-      // Salva no Downloads público (acessível pelo FileProvider)
-      await Filesystem.writeFile({
-        path: fileName,
-        data: base64,
-        directory: Directory.Documents,  // Público e acessível
-        encoding: Encoding.UTF8
-      });
-      
-      // Pega URI do arquivo (content:// para FileProvider)
-      const fileUri = await Filesystem.getUri({
-        directory: Directory.Documents,
-        path: fileName
-      });
-      
-      // Tenta Share nativo do Capacitor (usa FileProvider automaticamente)
+      // Estratégia 1: Salva em External/Downloads (mais acessível pelo FileProvider)
       try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.External,  // Downloads público
+          encoding: Encoding.UTF8
+        });
+        
+        const fileUri = await Filesystem.getUri({
+          directory: Directory.External,
+          path: fileName
+        });
+        
+        // Tenta Share nativo
         await Share.share({
           title: 'Cardápio Quatinga',
           text: 'Segue em anexo o relatório de pedidos.',
@@ -775,17 +774,65 @@
         });
         showToast("Compartilhamento aberto!", "success");
         return;
-      } catch (shareErr) {
-        console.warn('[admin] Capacitor Share falhou, tentando AppLauncher:', shareErr);
+      } catch (err1) {
+        console.warn('[admin] Estratégia 1 (External) falhou:', err1.message);
       }
       
-      // Fallback: AppLauncher com intent ACTION_VIEW (abre seletor de apps)
+      // Estratégia 2: Salva em Documents
       try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8
+        });
+        
+        const fileUri = await Filesystem.getUri({
+          directory: Directory.Documents,
+          path: fileName
+        });
+        
+        await Share.share({
+          title: 'Cardápio Quatinga',
+          text: 'Segue em anexo o relatório de pedidos.',
+          url: fileUri.uri,
+          dialogTitle: 'Compartilhar PDF'
+        });
+        showToast("Compartilhamento aberto!", "success");
+        return;
+      } catch (err2) {
+        console.warn('[admin] Estratégia 2 (Documents) falhou:', err2.message);
+      }
+      
+      // Estratégia 3: AppLauncher com intent ACTION_VIEW
+      try {
+        // Tenta usar a URI da estratégia 1 ou 2
+        const fileUri = await Filesystem.getUri({
+          directory: Directory.External,
+          path: fileName
+        });
+        
         await AppLauncher.openUrl({ url: fileUri.uri });
         showToast("Seletor de apps aberto!", "success");
         return;
-      } catch (launcherErr) {
-        console.warn('[admin] AppLauncher falhou:', launcherErr);
+      } catch (err3) {
+        console.warn('[admin] Estratégia 3 (AppLauncher) falhou:', err3.message);
+      }
+      
+      // Estratégia 4: Web Share API nativa (blob)
+      try {
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Cardápio Quatinga',
+            text: 'Segue em anexo o relatório de pedidos.',
+            files: [file]
+          });
+          showToast("Compartilhamento aberto!", "success");
+          return;
+        }
+      } catch (err4) {
+        console.warn('[admin] Estratégia 4 (Web Share) falhou:', err4.message);
       }
       
       // Último fallback: download direto
