@@ -748,33 +748,50 @@
   // ===== Helpers para PDF =====
   async function downloadAndShareViaCapacitor(pdfBlob, fileName) {
     try {
-      const { Filesystem, Directory, Encoding, Share } = global.Capacitor.Plugins;
+      const { Filesystem, Directory, Encoding, Share, AppLauncher } = global.Capacitor.Plugins;
       const base64 = await blobToBase64(pdfBlob);
       
-      // Salva no cache do app
+      // Salva no Downloads público (acessível pelo FileProvider)
       await Filesystem.writeFile({
         path: fileName,
         data: base64,
-        directory: Directory.Cache,
+        directory: Directory.Documents,  // Público e acessível
         encoding: Encoding.UTF8
       });
       
-      // Pega URI do arquivo
+      // Pega URI do arquivo (content:// para FileProvider)
       const fileUri = await Filesystem.getUri({
-        directory: Directory.Cache,
+        directory: Directory.Documents,
         path: fileName
       });
       
-      // Compartilha via Share nativo do Capacitor (funciona no Android nativo)
-      await Share.share({
-        title: 'Cardápio Quatinga',
-        text: 'Segue em anexo o relatório de pedidos.',
-        url: fileUri.uri,
-        dialogTitle: 'Compartilhar PDF'
-      });
-      showToast("Compartilhamento aberto!", "success");
+      // Tenta Share nativo do Capacitor (usa FileProvider automaticamente)
+      try {
+        await Share.share({
+          title: 'Cardápio Quatinga',
+          text: 'Segue em anexo o relatório de pedidos.',
+          url: fileUri.uri,
+          dialogTitle: 'Compartilhar PDF'
+        });
+        showToast("Compartilhamento aberto!", "success");
+        return;
+      } catch (shareErr) {
+        console.warn('[admin] Capacitor Share falhou, tentando AppLauncher:', shareErr);
+      }
+      
+      // Fallback: AppLauncher com intent ACTION_VIEW (abre seletor de apps)
+      try {
+        await AppLauncher.openUrl({ url: fileUri.uri });
+        showToast("Seletor de apps aberto!", "success");
+        return;
+      } catch (launcherErr) {
+        console.warn('[admin] AppLauncher falhou:', launcherErr);
+      }
+      
+      // Último fallback: download direto
+      downloadAndOpenPdf(pdfBlob, fileName);
     } catch (e) {
-      console.error('[admin] Erro Capacitor Share:', e);
+      console.error('[admin] Erro geral no share:', e);
       downloadAndOpenPdf(pdfBlob, fileName);
     }
   }
