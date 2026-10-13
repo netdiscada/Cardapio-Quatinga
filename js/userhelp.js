@@ -59,60 +59,149 @@
     if (!listEl) return;
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     const anoAtual = hoje.getFullYear();
-    let proximoIdx = -1;
-    let html = '';
-    HOLIDAYS_2026.forEach((f, i) => {
-      // converte dd/mm(yyyy?) para Date
+    
+    // Prepara mapa de feriados por data para lookup rápido
+    const feriadosMap = {};
+    HOLIDAYS_2026.forEach(f => {
       const parts = f.data.split('/');
-      const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-      const passou = d < hoje;
-      if (!passou && proximoIdx === -1) proximoIdx = i;
-      const destaque = i === proximoIdx ? ' ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20' : (passou ? ' opacity-50' : '');
-      const badge = i === proximoIdx ? '<span class="ml-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">PRÓXIMO</span>' : '';
-      const facilito = /facultativo/i.test(f.evento) || /Facultativo/.test(f.evento);
-      html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
-        <div class="min-w-0"><p class="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">${f.evento}${badge}</p></div>
-        <div class="text-right whitespace-nowrap"><p class="text-sm font-bold ${facilito ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}">${f.data}</p><p class="text-[10px] text-gray-400">${f.dia}</p></div>
-      </div>`;
+      const ano = parseInt(parts[2] || anoAtual, 10);
+      const mes = parseInt(parts[1], 10) - 1;
+      const dia = parseInt(parts[0], 10);
+      const key = `${ano}-${mes}-${dia}`;
+      if (!feriadosMap[key]) feriadosMap[key] = [];
+      feriadosMap[key].push(f);
     });
-    // Cartao do proximo feriado no topo
-    if (proximoIdx >= 0) {
-      const f = HOLIDAYS_2026[proximoIdx];
-      const parts = f.data.split('/');
-      const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-      const dias = Math.ceil((d - hoje) / 86400000);
-      html = `<div class="rounded-xl p-4 mb-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 text-center">
-        <p class="text-xs font-bold text-blue-500 uppercase tracking-wide">Próximo feriado/ponto facultativo</p>
-        <p class="text-lg font-bold text-blue-800 dark:text-blue-200 mt-1">${f.data} · ${f.dia}</p>
-        <p class="text-sm font-semibold text-blue-600 dark:text-blue-300">${f.evento}</p>
-        <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>
-      </div>` + html;
+
+    // Estado do calendário (mês atual sendo visualizado)
+    let currentMonth = hoje.getMonth();
+    let currentYear = hoje.getFullYear();
+
+    function getMonthName(mes) {
+      return ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes];
     }
-    
-    // Calendário visual de feriados (2026)
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    let calendarHtml = '<div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">';
-    calendarHtml += '<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">📅 Calendário de Feriados 2026</h3>';
-    calendarHtml += '<div class="grid grid-cols-2 gap-2">';
-    
-    months.forEach((mes, idx) => {
-      calendarHtml += `<div class="text-center p-2 rounded-lg border ${hoje.getMonth() === idx ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-zinc-800'}">`;
-      calendarHtml += `<p class="text-xs font-bold text-gray-600 dark:text-gray-400">${mes}</p>`;
-      // Marca feriados do mês
-      const feriadosDoMes = HOLIDAYS_2026.filter(f => {
-        const parts = f.data.split('/');
-        return parseInt(parts[1], 10) === idx + 1;
-      });
-      if (feriadosDoMes.length > 0) {
-        calendarHtml += `<p class="text-[10px] text-red-600 dark:text-red-400 font-bold mt-1">${feriadosDoMes.length} feriado(s)</p>`;
+
+    function getDayNames() {
+      return ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    }
+
+    function renderCalendar(mes, ano) {
+      const primeiroDia = new Date(ano, mes, 1);
+      const ultimoDia = new Date(ano, mes + 1, 0);
+      const diasNoMes = ultimoDia.getDate();
+      const diaSemanaInicio = primeiroDia.getDay(); // 0 = Dom
+      const diaAtual = hoje.getDate();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
+
+      let html = `
+        <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">
+          <!-- Header do calendário com navegação -->
+          <div class="flex items-center justify-between mb-4">
+            <button id="cal-prev" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" aria-label="Mês anterior">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+            <h3 class="font-bold text-lg text-gray-800 dark:text-gray-100 text-center flex-1">${getMonthName(mes)} de ${ano}</h3>
+            <button id="cal-next" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" aria-label="Próximo mês">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+          </div>
+          
+          <!-- Dias da semana -->
+          <div class="grid grid-cols-7 gap-1 mb-1">
+            ${getDayNames().map(d => `<div class="text-center text-xs font-bold text-gray-500 dark:text-gray-400 py-1">${d}</div>`).join('')}
+          </div>
+          
+          <!-- Grid dos dias -->
+          <div class="grid grid-cols-7 gap-1" id="calendar-grid">`;
+
+      // Dias vazios antes do primeiro dia do mês
+      for (let i = 0; i < diaSemanaInicio; i++) {
+        html += '<div class="aspect-square"></div>';
       }
-      calendarHtml += '</div>';
+
+      // Dias do mês
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        const key = `${ano}-${mes}-${dia}`;
+        const feriados = feriadosMap[key] || [];
+        const isHoje = (dia === diaAtual && mes === mesAtual && ano === anoAtual);
+        const isFeriado = feriados.length > 0;
+        const isFacultativo = feriados.some(f => /facultativo/i.test(f.evento));
+        
+        let classes = 'aspect-square flex flex-col items-center justify-center text-sm rounded-lg transition-all';
+        if (isHoje) {
+          classes += ' bg-blue-500 text-white font-bold shadow-lg ring-2 ring-blue-400';
+        } else if (isFeriado) {
+          classes += isFacultativo 
+            ? ' bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 font-bold border-2 border-amber-300 dark:border-amber-700'
+            : ' bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 font-bold border-2 border-red-300 dark:border-red-700';
+        } else {
+          classes += ' text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-zinc-800';
+        }
+
+        let tooltip = '';
+        if (isFeriado) {
+          tooltip = `title="${feriados.map(f => f.evento).join(', ')}"`;
+        }
+
+        html += `<div class="${classes}" ${tooltip} data-dia="${dia}">${dia}</div>`;
+      }
+
+      html += '</div></div>';
+      return html;
+    }
+
+    function renderList() {
+      let proximoIdx = -1;
+      let html = '';
+      HOLIDAYS_2026.forEach((f, i) => {
+        const parts = f.data.split('/');
+        const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        const passou = d < hoje;
+        if (!passou && proximoIdx === -1) proximoIdx = i;
+        const destaque = i === proximoIdx ? ' ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20' : (passou ? ' opacity-50' : '');
+        const badge = i === proximoIdx ? '<span class="ml-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">PRÓXIMO</span>' : '';
+        const facilito = /facultativo/i.test(f.evento) || /Facultativo/.test(f.evento);
+        html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
+          <div class="min-w-0"><p class="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">${f.evento}${badge}</p></div>
+          <div class="text-right whitespace-nowrap"><p class="text-sm font-bold ${facilito ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}">${f.data}</p><p class="text-[10px] text-gray-400">${f.dia}</p></div>
+        </div>`;
+      });
+      if (proximoIdx >= 0) {
+        const f = HOLIDAYS_2026[proximoIdx];
+        const parts = f.data.split('/');
+        const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        const dias = Math.ceil((d - hoje) / 86400000);
+        html = `<div class="rounded-xl p-4 mb-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 text-center">
+          <p class="text-xs font-bold text-blue-500 uppercase tracking-wide">Próximo feriado/ponto facultativo</p>
+          <p class="text-lg font-bold text-blue-800 dark:text-blue-200 mt-1">${f.data} · ${f.dia}</p>
+          <p class="text-sm font-semibold text-blue-600 dark:text-blue-300">${f.evento}</p>
+          <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>
+        </div>` + html;
+      }
+      return html;
+    }
+
+    // Render inicial
+    listEl.innerHTML = `
+      <div id="calendar-container">${renderCalendar(currentMonth, currentYear)}</div>
+      <div class="border-t border-gray-200 dark:border-zinc-800 pt-4">
+        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">📋 Lista de Feriados</h3>
+        <div id="holidays-list" class="space-y-1.5">${renderList()}</div>
+      </div>
+      <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
+    `;
+
+    // Event listeners para navegação
+    listEl.querySelector('#cal-prev')?.addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
     });
-    
-    calendarHtml += '</div></div>';
-    html = calendarHtml + html;
-    
-    listEl.innerHTML = html;
+    listEl.querySelector('#cal-next')?.addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      document.getElementById('calendar-container').innerHTML = renderCalendar(currentMonth, currentYear);
+    });
   }
 
   // ===== Render: Pagamento =====
