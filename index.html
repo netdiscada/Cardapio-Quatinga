@@ -830,6 +830,31 @@
                 <div id="rgf-consult-result" class="space-y-4"></div>
             </section>
 
+            <!-- ===== ABA DESENVOLVEDOR (Dev Logs) ===== -->
+            <section id="dev-panel-section" data-admin-panel="dev" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 flex items-center gap-3">
+                    <span>🛠️</span> Desenvolvedor / Debug
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <button id="dev-clear-logs" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white font-bold rounded-lg hover:bg-red-700 dark:hover:bg-red-400 transition-colors cursor-pointer">
+                        🗑️ Limpar Logs
+                    </button>
+                    <button id="dev-export-logs" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-colors cursor-pointer">
+                        📥 Exportar Logs
+                    </button>
+                    <button id="dev-test-pdf-share" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-400 transition-colors cursor-pointer md:col-span-2">
+                        🧪 Testar PDF Share (Debug)
+                    </button>
+                </div>
+
+                <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 font-mono text-xs overflow-auto" style="max-height: 500px;">
+                    <div id="dev-log-console" class="whitespace-pre-wrap text-green-300 dark:text-green-400">
+                        <span class="text-gray-500">[Sistema] Console de desenvolvedor iniciado. Logs aparecerão aqui.</span>
+                    </div>
+                </div>
+            </section>
+
             <!-- Tabela de Pedidos -->
             <section id="orders-section" data-admin-panel="orders">
                 <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b dark:border-zinc-800 pb-4 transition-colors">
