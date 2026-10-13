@@ -88,6 +88,30 @@
         <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>
       </div>` + html;
     }
+    
+    // Calendário visual de feriados (2026)
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    let calendarHtml = '<div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 mb-4 border border-gray-100 dark:border-zinc-800">';
+    calendarHtml += '<h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">📅 Calendário de Feriados 2026</h3>';
+    calendarHtml += '<div class="grid grid-cols-2 gap-2">';
+    
+    months.forEach((mes, idx) => {
+      calendarHtml += `<div class="text-center p-2 rounded-lg border ${hoje.getMonth() === idx ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-zinc-800'}">`;
+      calendarHtml += `<p class="text-xs font-bold text-gray-600 dark:text-gray-400">${mes}</p>`;
+      // Marca feriados do mês
+      const feriadosDoMes = HOLIDAYS_2026.filter(f => {
+        const parts = f.data.split('/');
+        return parseInt(parts[1], 10) === idx + 1;
+      });
+      if (feriadosDoMes.length > 0) {
+        calendarHtml += `<p class="text-[10px] text-red-600 dark:text-red-400 font-bold mt-1">${feriadosDoMes.length} feriado(s)</p>`;
+      }
+      calendarHtml += '</div>';
+    });
+    
+    calendarHtml += '</div></div>';
+    html = calendarHtml + html;
+    
     listEl.innerHTML = html;
   }
 
@@ -180,7 +204,34 @@
       : 'text-green-600 dark:text-green-400');
   }
 
-  function userRgfRender(latest, verbas) {
+  // ===== Busca 13º salário (folha de 13º) =====
+  async function fetchDecimoTerceiro(rgf, ano) {
+    try {
+      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (!data.results) return null;
+      // Procura folha de 13º (tipo_folha pode conter "13" ou "Décimo")
+      const decimo = data.results.find(r => 
+        r.tipo_folha && (r.tipo_folha.includes('13') || r.tipo_folha.toLowerCase().includes('decimo') || r.tipo_folha.toLowerCase().includes('décimo'))
+      );
+      if (!decimo) return null;
+      // Busca detalhes do 13º
+      const respDet = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${decimo.idfunselec}`);
+      if (respDet.ok) {
+        const det = await respDet.json();
+        if (det.results && det.results.length > 0) {
+          const liquido = det.results.reduce((acc, v) => acc + (v.tipoVerba === 'Rendimentos' ? parseFloat(v.valorverba) : -parseFloat(v.valorverba)), 0);
+          return { competencia: `${MES_ABREV[(decimo.mes || 1) - 1]}/${decimo.ano}`, liquido, verbas: det.results };
+        }
+      }
+      return { competencia: `${MES_ABREV[(decimo.mes || 1) - 1]}/${decimo.ano}`, liquido: parseFloat(decimo.liquido), verbas: [] };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function userRgfRender(latest, verbas, decimo) {
     const resultEl = document.getElementById('user-rgf-consult-result');
     if (!resultEl) return;
     const badge = latest.situacao === 'Ativo'
@@ -190,6 +241,26 @@
     const adiantamentoVerba = verbas && verbas.find(v => v.desnoverba && v.desnoverba.includes('ADIANTAMENTO'));
     const adiantamentoValor = adiantamentoVerba ? Math.abs(parseFloat(adiantamentoVerba.valorverba)) : 0;
     const salarioRestante = parseFloat(latest.liquido) - adiantamentoValor;
+    
+    // Monta HTML do 13º se existir
+    let decimoHtml = '';
+    if (decimo) {
+      decimoHtml = `
+        <div class="rounded-xl border border-amber-200 dark:border-amber-800 overflow-hidden mt-3">
+          <div class="bg-amber-500 px-4 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-white/80 text-[10px] font-semibold uppercase tracking-wide">13º Salário</p>
+                <h3 class="text-lg font-bold text-white leading-tight truncate">${decimo.competencia}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 space-y-2 bg-white dark:bg-zinc-900">
+            <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Líquido 13º</span><span class="font-bold text-amber-700 dark:text-amber-400">${fmtMoneyUser(decimo.liquido)}</span></div>
+          </div>
+        </div>`;
+    }
+    
     let html = `
       <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
         <div class="bg-blue-600 dark:bg-blue-500 px-4 py-3">
@@ -273,6 +344,15 @@
     } finally {
       btn.disabled = false;
       btn.textContent = original;
+    }
+
+    // Busca 13º em background (se o RGF for válido)
+    if (results.length > 0) {
+      const decimo = await fetchDecimoTerceiro(rgf, new Date().getFullYear());
+      if (decimo) {
+        // Recarrega o HTML com o 13º
+        userRgfRender(latest, verbas, decimo);
+      }
     }
   }
 

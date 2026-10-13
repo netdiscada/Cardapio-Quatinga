@@ -864,6 +864,10 @@
       document.getElementById('fin-calc-resultado').classList.add('hidden');
       document.getElementById('fin-calc-tipo-modal').classList.remove('hidden');
     });
+    // Botão fechar calculadora (Fechar)
+    document.getElementById('fin-calc-fechar-campos')?.addEventListener('click', () => {
+      document.getElementById('fin-calc-modal').classList.add('hidden');
+    });
     // Botão calcular
     document.getElementById('fin-calc-calcular').addEventListener('click', () => {
       const tipo = F._calcTipo || 'desconto';
