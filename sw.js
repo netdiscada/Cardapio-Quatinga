@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v8';
+const CACHE_NAME = 'cardapio-v9';
 
 const CORE_ASSETS = [
   './',
@@ -10,6 +10,11 @@ const CORE_ASSETS = [
   './js/financas.js',
   './js/notificationChecker.js'
 ];
+
+// Estratégia: stale-while-revalidate para assets do app
+// - Serve do cache imediatamente (rápido, funciona offline)
+// - Em background, busca na rede e atualiza o cache
+// - Próximo acesso pega a versão nova
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -31,18 +36,45 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = request.url;
 
+  // Não interceptar Firebase/Google APIs
   if (url.includes('firebase') || url.includes('googleapis')) return;
   if (request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(res => {
-        if (!res.ok) return res;
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(request, clone));
-        return res;
-      }).catch(() => cached);
-    })
-  );
+  // Para navegação (index.html) e JS/CSS: stale-while-revalidate
+  const isAppAsset = CORE_ASSETS.some(asset => url.endsWith(asset.replace('./', ''))) || url.endsWith('/');
+
+  if (isAppAsset) {
+    event.respondWith(staleWhileRevalidate(request));
+  } else {
+    // Outros assets: cache-first (imagens, fonts, etc)
+    event.respondWith(cacheFirst(request));
+  }
 });
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  // Fetch em background para atualizar cache
+  const fetchPromise = fetch(request).then(res => {
+    if (res.ok) {
+      cache.put(request, res.clone());
+    }
+    return res;
+  }).catch(() => cached); // Se falhar offline, usa cache
+
+  // Retorna cache imediatamente se tiver, senão espera fetch
+  return cached || fetchPromise;
+}
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const res = await fetch(request);
+  if (res.ok) {
+    cache.put(request, res.clone());
+  }
+  return res;
+}
