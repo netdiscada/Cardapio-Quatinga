@@ -27,6 +27,32 @@
   function addDoc(col, data) { return col.add(data); }
   function onSnapshot(ref, cb, errCb) { return ref.onSnapshot(cb, errCb); }
   function serverTimestamp() { return global.serverTimestamp(); }
+
+// =====================================================================
+// HELPER DE SEGURANÇA — safeToMillis (regressão: bug #001)
+// Conversão defensiva de timestamp do Firestore para millis.
+// Aceita:
+//   - Objeto Firebase Timestamp (com .toMillis())
+//   - Objeto Date nativo
+//   - String ISO (converte para Date)
+//   - null/undefined (retorna 0)
+//   - Número (já é millis)
+// Motivo: dados injetados via script podem gravar string ISO no campo
+// timestamp, enquanto o SDK Firebase grava objetos Timestamp.
+// Sem esse helper, .toMillis() em string lança erro e deixa a lista
+// de pedidos vazia no frontend.
+// =====================================================================
+function safeToMillis(ts) {
+  if (ts == null) return 0;
+  if (typeof ts.toMillis === 'function') return ts.toMillis();
+  if (ts instanceof Date) return ts.getTime();
+  if (typeof ts === 'string') {
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  if (typeof ts === 'number') return ts;
+  return 0;
+}
   function where(field, op, val) { return { __fq: 'where', field: field, op: op, val: val }; }
   function orderBy(field, direction) { return { __fq: 'orderBy', field: field, direction: direction || 'asc' }; }
   function query(colOrRef) {
@@ -62,7 +88,8 @@
     updateDoc: updateDoc,
     deleteDoc: deleteDoc,
     writeBatch: writeBatch,
-    runTransaction: runTransaction
+    runTransaction: runTransaction,
+    safeToMillis: safeToMillis
   };
 
   // =====================================================================

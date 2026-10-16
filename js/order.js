@@ -69,7 +69,7 @@
           const data = doc.data();
           const isNext = !!data.isNextWeek;
           if (isNext === st.viewingNextWeek) {
-            const time = data.timestamp ? data.timestamp.toMillis() : 0;
+            const time = data.timestamp ? fb.safeToMillis(data.timestamp) : 0;
             if (time >= latestTime) { latestTime = time; latestOrder = data; }
           }
         });

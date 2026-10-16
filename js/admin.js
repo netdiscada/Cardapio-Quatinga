@@ -103,7 +103,7 @@
       snapshot.forEach(doc => {
         const orderData = doc.data();
         if (orderData.employeeRGF) {
-          const timestamp = orderData.timestamp ? orderData.timestamp.toMillis() : 0;
+          const timestamp = orderData.timestamp ? fb.safeToMillis(orderData.timestamp) : 0;
           if (orderData.isNextWeek === true) {
             if (!latestNextOrdersMap.has(orderData.employeeRGF) || timestamp > latestNextOrdersMap.get(orderData.employeeRGF).timestamp) {
               latestNextOrdersMap.set(orderData.employeeRGF, { doc: doc, timestamp: timestamp });
@@ -239,7 +239,7 @@
       snapshot.forEach(doc => {
         const orderData = doc.data();
         if (orderData.employeeRGF) {
-          const timestamp = orderData.timestamp ? orderData.timestamp.toMillis() : 0;
+          const timestamp = orderData.timestamp ? fb.safeToMillis(orderData.timestamp) : 0;
           if (!latestOrdersMap.has(orderData.employeeRGF) || timestamp > latestOrdersMap.get(orderData.employeeRGF).timestamp) {
             latestOrdersMap.set(orderData.employeeRGF, { doc: doc, timestamp: timestamp });
           }
