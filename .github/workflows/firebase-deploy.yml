@@ -23,7 +23,7 @@ jobs:
 
       - name: Instalar dependências das funções
         working-directory: ./functions
-        run: npm ci
+        run: npm install
 
       - name: Compilar TypeScript
         working-directory: ./functions
