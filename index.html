@@ -370,6 +370,25 @@
                     min-height: 56px;
                     font-size: 1rem;
                 }
+                /* CORREÇÃO: contraste dos botões dentro do viewer (fundo escuro) */
+                #menu-viewer-buttons .wizard-btn {
+                    background: #ffffff !important;
+                    color: #111827 !important;
+                    border: 1px solid #e5e7eb !important;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+                }
+                #menu-viewer-buttons .wizard-btn:hover {
+                    border-color: #2563eb !important;
+                    background: #f9fafb !important;
+                }
+                #menu-viewer-buttons .wizard-btn .text-gray-800,
+                #menu-viewer-buttons .wizard-btn .dark\\:text-slate-200 {
+                    color: #111827 !important;
+                }
+                #menu-viewer-buttons .wizard-btn .text-gray-500,
+                #menu-viewer-buttons .wizard-btn .dark\\:text-slate-400 {
+                    color: #6b7280 !important;
+                }
                 /* Barra de progresso do wizard visível no fundo escuro */
                 #menu-viewer-buttons #wizard-progress span {
                     box-shadow: 0 0 4px rgba(255,255,255,0.3);
@@ -377,6 +396,11 @@
                 /* Container do submit (revisar pedido) também entra no rodapé */
                 #menu-viewer-buttons > #submitButtonContainer {
                     margin-top: 0.5rem;
+                }
+                /* Garante fundo sólido no rodapé do viewer para não "sumir" os botões */
+                #menu-viewer-buttons {
+                    background: #18181b !important;
+                    border-top: 1px solid #27272a !important;
                 }
             </style>
 <script src="js/menu-viewer.js"></script>
