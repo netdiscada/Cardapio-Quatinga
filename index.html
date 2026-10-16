@@ -503,6 +503,16 @@
                     </div>
                 </div>
 
+                <!-- Notificações em segundo plano -->
+                <div id="notificacoes-card" class="bg-blue-50 dark:bg-blue-900/20 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-blue-200 dark:border-blue-900/30 transition-colors hidden">
+                    <h3 class="text-md font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">𔔯 Notificações</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Receba avisos quando o cardápio mudar ou alguém fizer pedido.</p>
+                    <button id="ativarNotificacoesBtn" class="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition shadow-md cursor-pointer flex items-center justify-center gap-2">
+                        🔔 Ativar Notificações
+                    </button>
+                    <p id="statusNotificacoes" class="text-xs text-gray-500 dark:text-gray-400 mt-2"></p>
+                </div>
+
                 <div id="order-section" class="hidden scroll-mt-2">
                     <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
                         <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
@@ -1261,6 +1271,62 @@
         if ('serviceWorker' in navigator && location.protocol === 'https:') {
             navigator.serviceWorker.register('./sw.js?v=2026.1').catch(() => {});
         }
+    </script>
+
+    <script>
+    // Ativa notificações locais (polling de 30s) quando o usuário clica no botão
+    (function () {
+        const btn = document.getElementById('ativarNotificacoesBtn');
+        const status = document.getElementById('statusNotificacoes');
+        const card = document.getElementById('notificacoes-card');
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            btn.textContent = '⏳ Ativando...';
+
+            try {
+                const perm = await Notification.requestPermission();
+                if (perm !== 'granted') {
+                    status.textContent = 'Permissão negada. Ative nas configurações do navegador.';
+                    status.className = 'text-xs text-red-500 dark:text-red-400 mt-2';
+                    btn.disabled = false;
+                    btn.textContent = '🔔 Tentar Novamente';
+                    return;
+                }
+
+                // Inicia o checker de notificações (30s polling)
+                if (global.startNotificationChecker) {
+                    const rgfInput = document.getElementById('employeeRGF');
+                    const nameInput = document.getElementById('employeeName');
+                    const rgf = rgfInput?.value?.trim() || null;
+                    const name = nameInput?.value?.trim() || 'Usuário';
+
+                    global.startNotificationChecker(false, rgf, name);
+                    localStorage.setItem('notificacoesAtivas', 'true');
+                }
+
+                btn.textContent = '✅ Ativado';
+                btn.className = 'w-full bg-green-600 dark:bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition shadow-md cursor-pointer flex items-center justify-center gap-2';
+                status.textContent = 'Notificações ativas. Você receberá avisos em segundo plano.';
+                status.className = 'text-xs text-green-600 dark:text-green-400 mt-2';
+            } catch (e) {
+                status.textContent = 'Erro ao ativar notificações.';
+                status.className = 'text-xs text-red-500 dark:text-red-400 mt-2';
+                btn.disabled = false;
+                btn.textContent = '🔔 Tentar Novamente';
+                console.error('[notificacoes] Erro:', e);
+            }
+        });
+
+        // Se já ativado anteriormente, manter estado
+        if (localStorage.getItem('notificacoesAtivas') === 'true') {
+            btn.textContent = '✅ Ativado';
+            btn.className = 'w-full bg-green-600 dark:bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition shadow-md cursor-pointer flex items-center justify-center gap-2';
+            status.textContent = 'Notificações já ativas.';
+            status.className = 'text-xs text-green-600 dark:text-green-400 mt-2';
+        }
+    })();
     </script>
 </body>
 </html>
