@@ -402,6 +402,61 @@
                     background: #18181b !important;
                     border-top: 1px solid #27272a !important;
                 }
+                /* CORREÇÃO MODO ESCURO: fundo preto consistente em todo o viewer */
+                html.dark #menu-viewer-modal {
+                    background: rgba(0,0,0,0.95) !important;
+                }
+                html.dark #menu-viewer-stage {
+                    background: #000000 !important;
+                }
+                html.dark #menu-viewer-img {
+                    background: #000000 !important;
+                }
+                /* O wizard dentro do viewer fica como card branco flutuante (intencional),
+                   mas garante que não haja vazamento de branco fora dele */
+                html.dark #menu-viewer-buttons > #order-wizard-container {
+                    background: #ffffff !important;
+                    border: none !important;
+                    border-radius: 1rem 1rem 0 0 !important;
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.6) !important;
+                    margin-bottom: 0 !important;
+                    max-height: 45vh !important;
+                    overflow-y: auto !important;
+                }
+                /* Texto dos botões do wizard no modo escuro: preto para ler no fundo branco do card */
+                html.dark #menu-viewer-buttons .wizard-btn {
+                    background: #ffffff !important;
+                    color: #111827 !important;
+                    border: 1px solid #e5e7eb !important;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+                }
+                html.dark #menu-viewer-buttons .wizard-btn:hover {
+                    border-color: #2563eb !important;
+                    background: #f9fafb !important;
+                }
+                html.dark #menu-viewer-buttons .wizard-btn .text-gray-800,
+                html.dark #menu-viewer-buttons .wizard-btn .dark\\:text-slate-200 {
+                    color: #111827 !important;
+                }
+                html.dark #menu-viewer-buttons .wizard-btn .text-gray-500,
+                html.dark #menu-viewer-buttons .wizard-btn .dark\\:text-slate-400 {
+                    color: #6b7280 !important;
+                }
+                /* Botões de controle do viewer (zoom +/- / fechar) no modo escuro */
+                html.dark #viewer-zoom-in,
+                html.dark #viewer-zoom-out,
+                html.dark #viewer-reset,
+                html.dark #viewer-close-btn {
+                    background: rgba(255,255,255,0.15) !important;
+                    color: #ffffff !important;
+                    border: none !important;
+                }
+                html.dark #viewer-zoom-in:hover,
+                html.dark #viewer-zoom-out:hover,
+                html.dark #viewer-reset:hover,
+                html.dark #viewer-close-btn:hover {
+                    background: rgba(255,255,255,0.25) !important;
+                }
             </style>
 <script src="js/menu-viewer.js"></script>
 </head>
