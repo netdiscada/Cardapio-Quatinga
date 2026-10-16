@@ -492,21 +492,46 @@
   function bindHolidayCalendarHandlers() {
     const calendarContainer = document.getElementById('holidayCalendar');
     if (!calendarContainer) return;
-    
+
+    // Pré-seleção automática de feriados da próxima semana
+    // Usa a tabela HOLIDAYS_2026 já existente na aba Feriados
+    function preselectHolidaysFromTable() {
+      const st = S();
+      const dates = getNextWeekDates(); // [dom, seg, ter, qua, qui, sex, sab]
+      const dayIds = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
+
+      // Só pré-seleciona se ainda não houver feriados definidos (não sobrescreve seleção manual)
+      if (!st.currentMenuData.nextHolidays || st.currentMenuData.nextHolidays.length === 0) {
+        const autoHolidays = [];
+        // dates.slice(1, 6) = seg, ter, qua, qui, sex da próxima semana
+        dates.slice(1, 6).forEach((date, i) => {
+          const holidayInfo = global.isHolidayDate ? global.isHolidayDate(date) : null;
+          if (holidayInfo && holidayInfo.isHoliday) {
+            autoHolidays.push(dayIds[i]);
+          }
+        });
+        if (autoHolidays.length > 0) {
+          st.currentMenuData.nextHolidays = autoHolidays;
+          console.log('[Feriados Auto] Pré-selecionados:', autoHolidays);
+        }
+      }
+    }
+
     // Constroi a grade de dias na primeira vez
     buildHolidayCalendarGrid();
-    
+    preselectHolidaysFromTable();
+
     // Delegação de eventos para os dias do calendário
     calendarContainer.addEventListener('click', (e) => {
       const dayEl = e.target.closest('[data-day-id]');
       if (!dayEl) return;
-      
+
       const dayId = dayEl.dataset.dayId;
       const st = S();
       if (!Array.isArray(st.currentMenuData.nextHolidays)) st.currentMenuData.nextHolidays = [];
       const holidays = st.currentMenuData.nextHolidays;
       const index = holidays.indexOf(dayId);
-      
+
       if (index > -1) {
         holidays.splice(index, 1);
       } else {
@@ -514,11 +539,11 @@
       }
       renderHolidayCalendar();
     });
-    
+
     // Botões de seleção rápida
     const selectWeekdaysBtn = document.getElementById('selectWeekdays');
     const clearHolidaysBtn = document.getElementById('clearHolidaysBtn');
-    
+
     if (selectWeekdaysBtn) {
       selectWeekdaysBtn.addEventListener('click', () => {
         const st = S();
@@ -526,7 +551,7 @@
         renderHolidayCalendar();
       });
     }
-    
+
     if (clearHolidaysBtn) {
       clearHolidaysBtn.addEventListener('click', () => {
         const st = S();

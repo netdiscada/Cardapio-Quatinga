@@ -515,6 +515,33 @@
     form.addEventListener('submit', handleUserRgfConsult);
   }
 
+  // ===== Consulta de feriado por data (para uso do admin e outros módulos) =====
+  function isHolidayDate(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+    const d = date.getDate();
+    const m = date.getMonth() + 1;
+    const y = date.getFullYear();
+
+    for (const f of HOLIDAYS_2026) {
+      const parts = f.data.split('/');
+      const fDia = parseInt(parts[0], 10);
+      const fMes = parseInt(parts[1], 10);
+      const fAno = parts.length > 2 && parts[2] ? parseInt(parts[2], 10) : y;
+
+      if (fDia === d && fMes === m && fAno === y) {
+        return {
+          isHoliday: true,
+          evento: f.evento,
+          tipo: /facultativo/i.test(f.evento) ? 'facultativo' : 'feriado',
+          diaSemana: f.dia
+        };
+      }
+    }
+    return { isHoliday: false };
+  }
+
+  global.isHolidayDate = isHolidayDate;
+
   // ===== Boot =====
   function initUserHelp() {
     renderUserHolidays();
