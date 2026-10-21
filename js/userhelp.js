@@ -419,7 +419,7 @@
         <div class="bg-blue-600 dark:bg-blue-500 px-4 py-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="min-w-0">
-              <p class="text-white/80 text-[10px] font-semibold uppercase tracking-wide">Matrícula ${latest.matricula}</p>
+              <p class="text-white/80 text-[10px] font-semibold uppercase tracking-wide">Matrícula ${latest.matricula.split('/')[0]}</p>
               <h3 class="text-lg font-bold text-white leading-tight truncate">${latest.nome}</h3>
             </div>
             ${badge}

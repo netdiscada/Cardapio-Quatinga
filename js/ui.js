@@ -159,6 +159,11 @@
       nextBtn.classList.add('text-gray-600', 'dark:text-slate-400', 'hover:bg-gray-200', 'dark:hover:bg-slate-700');
     }
     global.loadAdminData();
+    // Garante que o calendário de feriados seja (re)criado e os feriados preselecionados
+    // sempre que a aba Próxima Semana for ativada
+    if (isNextWeek && global.bindHolidayCalendarHandlers) {
+      global.bindHolidayCalendarHandlers();
+    }
   }
 
   // ===== Tabela de pedidos =====
