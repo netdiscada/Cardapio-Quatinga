@@ -1273,8 +1273,24 @@
             </div>
         </div>
     <script>
+        // Força limpeza completa de Service Worker e cache antes de registrar o novo
         if ('serviceWorker' in navigator && location.protocol === 'https:') {
-            navigator.serviceWorker.register('./sw.js?v=2026.4').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister().then(function() {
+                        // Limpa caches antigos
+                        if (caches) {
+                            caches.keys().then(function(cacheNames) {
+                                cacheNames.forEach(function(cacheName) {
+                                    caches.delete(cacheName);
+                                });
+                            });
+                        }
+                    });
+                }
+                // Registra o novo Service Worker
+                navigator.serviceWorker.register('./sw.js?v=2026.4').catch(() => {});
+            });
         }
     </script>
 </body>
