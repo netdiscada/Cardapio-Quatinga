@@ -509,8 +509,9 @@
     const anoAtual = new Date().getFullYear();
     let todosResultados = [];
     let pagina = 1;
+    const maxPaginas = 10; // até 10 páginas (500 registros) para campos com muitos resultados
 
-    while (pagina <= 3) {
+    while (pagina <= maxPaginas) {
       const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?${campo}=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
       if (!resp.ok) break;
       const data = await resp.json();
@@ -584,9 +585,10 @@
     const anoAtual = new Date().getFullYear();
     let todosResultados = [];
     let pagina = 1;
+    const maxPaginas = 10; // até 10 páginas (500 registros)
 
     // Percorre páginas até encontrar resultados ou esgotar
-    while (pagina <= 3) {
+    while (pagina <= maxPaginas) {
       const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?nome=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
       if (!resp.ok) break;
       const data = await resp.json();
