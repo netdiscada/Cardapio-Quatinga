@@ -1,14 +1,24 @@
-const CACHE_NAME = 'cardapio-v9';
+const CACHE_NAME = 'cardapio-v10';
 
 const CORE_ASSETS = [
   './',
   './index.html',
-  './js/app.js',
+  './css/styles.css',
+  './js/config.js',
   './js/firebase.js',
   './js/db.js',
+  './js/auth.js',
+  './js/ui.js',
+  './js/order.js',
+  './js/admin.js',
+  './js/menu-viewer.js',
   './js/userhelp.js',
   './js/financas.js',
-  './js/notificationChecker.js'
+  './js/notificationChecker.js',
+  './js/notificationTrigger.js',
+  './js/pushRegistration.js',
+  './js/appUpdate.js',
+  './js/app.js'
 ];
 
 // Estratégia: stale-while-revalidate para assets do app
@@ -72,9 +82,15 @@ async function cacheFirst(request) {
   const cached = await cache.match(request);
   if (cached) return cached;
 
-  const res = await fetch(request);
-  if (res.ok) {
-    cache.put(request, res.clone());
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      cache.put(request, res.clone());
+    }
+    return res;
+  } catch (e) {
+    // Sem rede e sem cache: retorna resposta vazia em vez de lançar erro,
+    // para não travar o carregamento da página off-line.
+    return new Response('', { status: 200, statusText: 'offline', headers: { 'Content-Type': 'text/plain' } });
   }
-  return res;
 }
