@@ -459,6 +459,9 @@
     const termo = input.value.trim();
     if (!termo) { userRgfSetStatus('Digite um RGF ou nome para consultar.', 'error'); return; }
 
+    // Tipo de pesquisa: valor salvo pelo popup, ou 'auto' (detecta automaticamente)
+    const tipo = window.__rgfFiltroTipo || 'auto';
+
     // Normaliza RGF digitado com ou sem sufixo "/0": "22823/0" -> "22823"
     const parteInteira = termo.split('/')[0];
     const rgf = parteInteira.replace(/\D/g, '');
@@ -472,12 +475,25 @@
     userRgfSetStatus(ehRGF ? 'Consultando RGF ' + termo + '...' : 'Buscando por nome "' + termo + '"...', 'loading');
 
     try {
-      if (ehRGF) {
-        // ===== BUSCA POR RGF (certeza absoluta) =====
-        await consultarPorRGF(somenteDigitos);
-      } else {
+      if (tipo === 'matricula' || ehRGF) {
+        // ===== BUSCA POR MATRÍCULA (certeza absoluta) =====
+        await consultarPorRGF(rgf);
+      } else if (tipo === 'nome') {
         // ===== BUSCA POR NOME (múltiplos resultados) =====
         await consultarPorNome(termo);
+      } else if (tipo === 'cargo') {
+        await consultarPorCampo('cargo', termo);
+      } else if (tipo === 'secretaria') {
+        await consultarPorCampo('secretaria', termo);
+      } else if (tipo === 'situacao') {
+        await consultarPorCampo('situacao', termo);
+      } else {
+        // auto: detecta automaticamente
+        if (ehRGF) {
+          await consultarPorRGF(rgf);
+        } else {
+          await consultarPorNome(termo);
+        }
       }
     } catch (err) {
       userRgfSetStatus('Erro na consulta: ' + err.message, 'error');
@@ -485,6 +501,43 @@
       btn.disabled = false;
       btn.textContent = original;
     }
+  }
+
+  // ===== Consulta genérica por campo da API (cargo, secretaria, situacao) =====
+  async function consultarPorCampo(campo, termo) {
+    const resultEl = document.getElementById('user-rgf-consult-result');
+    const anoAtual = new Date().getFullYear();
+    let todosResultados = [];
+    let pagina = 1;
+
+    while (pagina <= 3) {
+      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?${campo}=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
+      if (!resp.ok) break;
+      const data = await resp.json();
+      if (!data.results || data.results.length === 0) break;
+      todosResultados = todosResultados.concat(data.results);
+      if (!data.next) break;
+      pagina++;
+    }
+
+    if (todosResultados.length === 0) {
+      userRgfSetStatus('Nenhum registro encontrado para ' + campo + ' "' + termo + '".', 'error');
+      return;
+    }
+
+    // Remove duplicados pela matrícula (parte antes do /), mantendo o mais recente
+    const porFuncionario = new Map();
+    todosResultados.forEach(r => {
+      const chave = (r.matricula || '').split('/')[0];
+      const existente = porFuncionario.get(chave);
+      if (!existente || (r.ano * 12 + r.mes) > (existente.ano * 12 + existente.mes)) {
+        porFuncionario.set(chave, r);
+      }
+    });
+
+    const funcionarios = Array.from(porFuncionario.values());
+    userRgfSetStatus(`${funcionarios.length} resultado${funcionarios.length !== 1 ? 's' : ''} para ${campo} "${termo}".`, 'success');
+    userRgfRenderList(funcionarios);
   }
 
   // ===== Consulta por RGF (único resultado, certeza absoluta) =====
@@ -633,6 +686,36 @@
     const form = document.getElementById('user-rgf-consult-form');
     if (!form) return;
     form.addEventListener('submit', handleUserRgfConsult);
+
+    // Popup de tipo de pesquisa
+    const filtroBtn = document.getElementById('user-rgf-filtro-btn');
+    const filtroPopup = document.getElementById('user-rgf-filtro-popup');
+    if (filtroBtn && filtroPopup) {
+      // Abre/fecha popup
+      filtroBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filtroPopup.classList.toggle('hidden');
+      });
+
+      // Seleciona tipo de pesquisa
+      filtroPopup.querySelectorAll('[data-filtro]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          window.__rgfFiltroTipo = btn.dataset.filtro;
+          filtroPopup.classList.add('hidden');
+          // Atualiza visual do botão principal para mostrar o tipo ativo
+          const tipos = { nome: 'Nome', matricula: 'Matrícula', cargo: 'Cargo', secretaria: 'Secretaria', situacao: 'Situação' };
+          filtroBtn.title = 'Tipo: ' + (tipos[btn.dataset.filtro] || 'Auto');
+          filtroBtn.textContent = '🔍 ' + (tipos[btn.dataset.filtro] || 'Filtro');
+        });
+      });
+
+      // Fecha popup ao clicar fora
+      document.addEventListener('click', (e) => {
+        if (!filtroPopup.contains(e.target) && e.target !== filtroBtn) {
+          filtroPopup.classList.add('hidden');
+        }
+      });
+    }
   }
 
   // ===== Consulta de feriado por data (para uso do admin e outros módulos) =====

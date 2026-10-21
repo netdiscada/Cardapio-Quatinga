@@ -579,10 +579,25 @@
                 <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
                     <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">🔍 Consultar Contracheque por RGF</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Dados públicos do portal da transparência de Mogi das Cruzes.</p>
-                    <form id="user-rgf-consult-form" class="flex flex-wrap gap-2 mb-4">
-                        <input type="text" id="user-rgf-consult-input" placeholder="Digite o RGF ou nome (ex: 22823 ou Fernando)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
-                        <button type="submit" id="user-rgf-consult-btn" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Consultar</button>
+                    <form id="user-rgf-consult-form" class="flex flex-wrap gap-2 mb-4 items-end">
+                       <input type="text" id="user-rgf-consult-input" placeholder="Digite o RGF ou nome (ex: 22823 ou Fernando)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
+                       <button type="button" id="user-rgf-filtro-btn" class="px-3 py-2.5 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors cursor-pointer text-xs sm:text-sm whitespace-nowrap" title="Tipo de pesquisa">🔍 Filtro</button>
+                       <button type="submit" id="user-rgf-consult-btn" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Consultar</button>
                     </form>
+
+                    <!-- Popup de tipo de pesquisa -->
+                    <div id="user-rgf-filtro-popup" class="hidden absolute top-full left-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg shadow-xl z-50">
+                       <div class="p-3 border-b border-gray-100 dark:border-zinc-800">
+                           <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Tipo de pesquisa</p>
+                       </div>
+                       <div class="p-2 space-y-1">
+                           <button type="button" data-filtro="nome" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded transition-colors border-b border-gray-50 dark:border-zinc-800/50 last:border-0">Nome</button>
+                           <button type="button" data-filtro="matricula" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded transition-colors border-b border-gray-50 dark:border-zinc-800/50 last:border-0">Matrícula (RGF)</button>
+                           <button type="button" data-filtro="cargo" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded transition-colors border-b border-gray-50 dark:border-zinc-800/50 last:border-0">Cargo</button>
+                           <button type="button" data-filtro="secretaria" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded transition-colors border-b border-gray-50 dark:border-zinc-800/50 last:border-0">Secretaria</button>
+                           <button type="button" data-filtro="situacao" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-zinc-800 rounded transition-colors border-b border-gray-50 dark:border-zinc-800/50 last:border-0">Situação</button>
+                       </div>
+                    </div>
                     <div id="user-rgf-consult-status" class="hidden mb-4 text-sm font-semibold"></div>
                     <div id="user-rgf-consult-result" class="space-y-4"></div>
                 </div>
@@ -1232,7 +1247,7 @@
     <script src="js/ui.js?v=2026.1"></script>
     <script src="js/order.js?v=2026.1"></script>
     <script src="js/admin.js?v=2026.1"></script>
-    <script src="js/userhelp.js?v=2026.3"></script>
+    <script src="js/userhelp.js?v=2026.4"></script>
     <script src="js/financas.js?v=2026.1"></script>
     <script src="js/notificationChecker.js?v=2026.1"></script>
     <script src="js/notificationTrigger.js?v=2026.1"></script>
