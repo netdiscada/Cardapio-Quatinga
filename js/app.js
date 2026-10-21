@@ -407,11 +407,11 @@
     const menuImage = document.getElementById('menu-image');
     menuImage.addEventListener('click', () => { if (typeof menuViewerOpen === 'function') menuViewerOpen(); });
 
-    // ===== v3: Handlers do calendario interativo + busca de funcionarios =====
+    // ===== v3: init userhelp ANTES dos handlers do calendario (precisa de isHolidayDate) ====
+    if (global.initUserHelp) global.initUserHelp();
     if (global.bindHolidayCalendarHandlers) global.bindHolidayCalendarHandlers();
     if (global.bindEmployeeSearchHandler) global.bindEmployeeSearchHandler();
     if (global.bindRgfConsultHandler) global.bindRgfConsultHandler();
-    if (global.initUserHelp) global.initUserHelp();
     if (global.initFinancas) global.initFinancas();
 
     // ===== v3: Toggle do formulario de adicionar funcionario =====
