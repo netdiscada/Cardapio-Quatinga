@@ -456,57 +456,174 @@
     const resultEl = document.getElementById('user-rgf-consult-result');
     const btn = document.getElementById('user-rgf-consult-btn');
     if (!input || !resultEl) return;
-    const rgf = input.value.trim().replace(/\D/g, '');
-    if (!rgf) { userRgfSetStatus('Digite um RGF para consultar.', 'error'); return; }
+    const termo = input.value.trim();
+    if (!termo) { userRgfSetStatus('Digite um RGF ou nome para consultar.', 'error'); return; }
+
+    // Detecta se o termo é apenas número (RGF) ou contém letras (nome)
+    const somenteDigitos = termo.replace(/\D/g, '');
+    const ehRGF = somenteDigitos.length > 0 && somenteDigitos === termo;
 
     btn.disabled = true;
     const original = btn.textContent;
     btn.textContent = 'Consultando...';
     resultEl.innerHTML = '';
-    userRgfSetStatus('Consultando RGF ' + rgf + '...', 'loading');
+    userRgfSetStatus(ehRGF ? 'Consultando RGF ' + termo + '...' : 'Buscando por nome "' + termo + '"...', 'loading');
+
     try {
-      const anoAtual = new Date().getFullYear();
-      let results = [];
-      for (let ano = anoAtual; ano >= anoAtual - 8 && results.length === 0; ano--) {
-        const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        if (data.results && data.results.length > 0) results = data.results;
+      if (ehRGF) {
+        // ===== BUSCA POR RGF (certeza absoluta) =====
+        await consultarPorRGF(somenteDigitos);
+      } else {
+        // ===== BUSCA POR NOME (múltiplos resultados) =====
+        await consultarPorNome(termo);
       }
-      if (results.length === 0) {
-        userRgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
-        return;
-      }
-      const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-      const pool = mensais.length > 0 ? mensais : results;
-      const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
-      userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
-
-      let verbas = null;
-      try {
-        const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
-        if (respF.ok) {
-          const fd = await respF.json();
-          if (fd.results && fd.results.length > 0) verbas = fd.results;
-        }
-      } catch (_) { /* detalhe opcional */ }
-
-      userRgfRender(latest, verbas);
     } catch (err) {
       userRgfSetStatus('Erro na consulta: ' + err.message, 'error');
     } finally {
       btn.disabled = false;
       btn.textContent = original;
     }
+  }
 
-    // Busca 13º em background (se o RGF for válido)
-    if (results.length > 0) {
-      const decimo = await fetchDecimoTerceiro(rgf, new Date().getFullYear());
-      if (decimo) {
-        // Recarrega o HTML com o 13º
-        userRgfRender(latest, verbas, decimo);
-      }
+  // ===== Consulta por RGF (único resultado, certeza absoluta) =====
+  async function consultarPorRGF(rgf) {
+    const resultEl = document.getElementById('user-rgf-consult-result');
+    const anoAtual = new Date().getFullYear();
+    let results = [];
+    for (let ano = anoAtual; ano >= anoAtual - 8 && results.length === 0; ano--) {
+      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (data.results && data.results.length > 0) results = data.results;
     }
+    if (results.length === 0) {
+      userRgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
+      return;
+    }
+    const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
+    const pool = mensais.length > 0 ? mensais : results;
+    const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+    userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
+
+    let verbas = null;
+    try {
+      const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
+      if (respF.ok) {
+        const fd = await respF.json();
+        if (fd.results && fd.results.length > 0) verbas = fd.results;
+      }
+    } catch (_) { /* detalhe opcional */ }
+
+    userRgfRender(latest, verbas);
+
+    // Busca 13º em background
+    const decimo = await fetchDecimoTerceiro(rgf, new Date().getFullYear());
+    if (decimo) {
+      userRgfRender(latest, verbas, decimo);
+    }
+  }
+
+  // ===== Consulta por Nome (múltiplos resultados em tabela) =====
+  async function consultarPorNome(termo) {
+    const resultEl = document.getElementById('user-rgf-consult-result');
+    const anoAtual = new Date().getFullYear();
+    let todosResultados = [];
+    let pagina = 1;
+
+    // Percorre páginas até encontrar resultados ou esgotar
+    while (pagina <= 3) {
+      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?nome=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
+      if (!resp.ok) break;
+      const data = await resp.json();
+      if (!data.results || data.results.length === 0) break;
+      todosResultados = todosResultados.concat(data.results);
+      if (!data.next) break;
+      pagina++;
+    }
+
+    if (todosResultados.length === 0) {
+      userRgfSetStatus('Nenhum funcionário encontrado com o nome "' + termo + '".', 'error');
+      return;
+    }
+
+    // Remove duplicados pelo idfunselec, mantendo o mais recente
+    const porFuncionario = new Map();
+    todosResultados.forEach(r => {
+      const chave = r.idfunselec;
+      const existente = porFuncionario.get(chave);
+      if (!existente || (r.ano * 12 + r.mes) > (existente.ano * 12 + existente.mes)) {
+        porFuncionario.set(chave, r);
+      }
+    });
+
+    const funcionarios = Array.from(porFuncionario.values());
+    userRgfSetStatus(`${funcionarios.length} funcionário${funcionarios.length !== 1 ? 's' : ''} encontrado${funcionarios.length !== 1 ? 's' : ''} para "${termo}".`, 'success');
+    userRgfRenderList(funcionarios);
+  }
+
+  // ===== Renderiza tabela de funcionários encontrados por nome =====
+  function userRgfRenderList(funcionarios) {
+    const resultEl = document.getElementById('user-rgf-consult-result');
+    if (!resultEl) return;
+
+    const html = `
+      <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
+        <div class="bg-blue-600 dark:bg-blue-500 px-4 py-3">
+          <h4 class="text-white font-bold text-sm uppercase tracking-wide">Selecione o funcionário</h4>
+        </div>
+        <div class="p-3 overflow-x-auto">
+          <table class="min-w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-sm">
+            <thead class="bg-gray-50 dark:bg-zinc-800">
+              <tr>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">RGF</th>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Nome</th>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Cargo</th>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Secretaria</th>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Situação</th>
+                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${funcionarios.map(f => `
+                <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer select-none rgf-list-row"
+                    data-rgf="${f.matricula}"
+                    data-nome="${f.nome}"
+                    data-cargo="${f.cargo || '—'}"
+                    data-secretaria="${f.secretaria || '—'}"
+                    data-situacao="${f.situacao || '—'}"
+                    data-idfunselec="${f.idfunselec || ''}">
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${f.matricula}</td>
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-100">${f.nome}</td>
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.cargo || '—'}</td>
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.secretaria || '—'}</td>
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                    <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${f.situacao === 'Ativo' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}">${f.situacao || '—'}</span>
+                  </td>
+                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                    <button class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded hover:bg-blue-700 dark:hover:bg-blue-400">Selecionar</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">Clique em "Selecionar" no funcionário desejado para carregar seus dados.</p>
+      </div>
+    `;
+    resultEl.innerHTML = html;
+
+    // Bind nos botões de selecionar
+    resultEl.querySelectorAll('.rgf-list-row button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.rgf-list-row');
+        const rgf = row.dataset.rgf.replace(/\D/g, '');
+        const nome = row.dataset.nome || '';
+        const input = document.getElementById('user-rgf-consult-input');
+        if (input) input.value = rgf;
+        // Carrega direto os dados do funcionário selecionado
+        consultarPorRGF(rgf);
+      });
+    });
   }
 
   function bindUserRgfConsult() {
