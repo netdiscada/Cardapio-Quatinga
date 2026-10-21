@@ -459,9 +459,11 @@
     const termo = input.value.trim();
     if (!termo) { userRgfSetStatus('Digite um RGF ou nome para consultar.', 'error'); return; }
 
-    // Detecta se o termo é apenas número (RGF) ou contém letras (nome)
-    const somenteDigitos = termo.replace(/\D/g, '');
-    const ehRGF = somenteDigitos.length > 0 && somenteDigitos === termo;
+    // Normaliza RGF digitado com ou sem sufixo "/0": "22823/0" -> "22823"
+    const parteInteira = termo.split('/')[0];
+    const rgf = parteInteira.replace(/\D/g, '');
+    // Só dígitos e barras = busca por RGF (certeza absoluta); senão = busca por nome
+    const ehRGF = /^[\d\/]+$/.test(termo) && rgf.length > 0;
 
     btn.disabled = true;
     const original = btn.textContent;
@@ -546,10 +548,10 @@
       return;
     }
 
-    // Remove duplicados pelo idfunselec, mantendo o mais recente
+    // Remove duplicados pela matrícula (parte antes do /), mantendo o mais recente
     const porFuncionario = new Map();
     todosResultados.forEach(r => {
-      const chave = r.idfunselec;
+      const chave = (r.matricula || '').split('/')[0];
       const existente = porFuncionario.get(chave);
       if (!existente || (r.ano * 12 + r.mes) > (existente.ano * 12 + existente.mes)) {
         porFuncionario.set(chave, r);
@@ -616,7 +618,8 @@
     resultEl.querySelectorAll('.rgf-list-row button').forEach(btn => {
       btn.addEventListener('click', () => {
         const row = btn.closest('.rgf-list-row');
-        const rgf = row.dataset.rgf.replace(/\D/g, '');
+        // Pega só a parte antes do "/" : "22823/0" -> "22823"
+        const rgf = row.dataset.rgf.split('/')[0].replace(/\D/g, '');
         const nome = row.dataset.nome || '';
         const input = document.getElementById('user-rgf-consult-input');
         if (input) input.value = rgf;
