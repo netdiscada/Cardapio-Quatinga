@@ -520,6 +520,8 @@
     // Constroi a grade de dias na primeira vez
     buildHolidayCalendarGrid();
     preselectHolidaysFromTable();
+    // Re-renderiza para aplicar a pré-seleção automática de feriados
+    renderHolidayCalendar();
 
     // Delegação de eventos para os dias do calendário
     calendarContainer.addEventListener('click', (e) => {
