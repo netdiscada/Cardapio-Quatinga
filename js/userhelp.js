@@ -623,48 +623,57 @@
     const resultEl = document.getElementById('user-rgf-consult-result');
     if (!resultEl) return;
 
+    // Estado para refiltro local da tabela
+    window.__rgfFiltroLista = funcionarios || window.__rgfFiltroLista || [];
+
     const html = `
       <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
         <div class="bg-blue-600 dark:bg-blue-500 px-4 py-3">
           <h4 class="text-white font-bold text-sm uppercase tracking-wide">Selecione o funcionário</h4>
         </div>
-        <div class="p-3 overflow-x-auto">
-          <table class="min-w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-sm">
-            <thead class="bg-gray-50 dark:bg-zinc-800">
-              <tr>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">RGF</th>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Nome</th>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Cargo</th>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Secretaria</th>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Situação</th>
-                <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${funcionarios.map(f => `
-                <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer select-none rgf-list-row"
-                    data-rgf="${f.matricula}"
-                    data-nome="${f.nome}"
-                    data-cargo="${f.cargo || '—'}"
-                    data-secretaria="${f.secretaria || '—'}"
-                    data-situacao="${f.situacao || '—'}"
-                    data-idfunselec="${f.idfunselec || ''}">
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${f.matricula}</td>
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-100">${f.nome}</td>
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.cargo || '—'}</td>
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.secretaria || '—'}</td>
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
-                    <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${f.situacao === 'Ativo' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}">${f.situacao || '—'}</span>
-                  </td>
-                  <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
-                    <button class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded hover:bg-blue-700 dark:hover:bg-blue-400">Selecionar</button>
-                  </td>
+        <div class="p-3">
+          <!-- Campo de refinamento local (filtra sem chamar a API) -->
+          <div class="mb-3">
+            <input type="text" id="user-rgf-filtro-local" placeholder="Filtrar resultados (nome, RGF, cargo, secretaria...)" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition-colors">
+          </div>
+          <div class="p-3 overflow-x-auto">
+            <table id="user-rgf-tabela" class="min-w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-sm">
+              <thead class="bg-gray-50 dark:bg-zinc-800">
+                <tr>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">RGF</th>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Nome</th>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Cargo</th>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Secretaria</th>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Situação</th>
+                  <th class="px-3 py-2 border-b border-gray-200 dark:border-zinc-700 text-left font-bold text-gray-700 dark:text-gray-300">Ação</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
+              </thead>
+              <tbody id="user-rgf-tabela-corpo">
+                ${funcionarios.map(f => `
+                  <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer select-none rgf-list-row"
+                      data-rgf="${f.matricula}"
+                      data-nome="${f.nome}"
+                      data-cargo="${f.cargo || '—'}"
+                      data-secretaria="${f.secretaria || '—'}"
+                      data-situacao="${f.situacao || '—'}"
+                      data-idfunselec="${f.idfunselec || ''}">
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${f.matricula}</td>
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-100">${f.nome}</td>
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.cargo || '—'}</td>
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.secretaria || '—'}</td>
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                      <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${f.situacao === 'Ativo' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}">${f.situacao || '—'}</span>
+                    </td>
+                    <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                      <button class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded hover:bg-blue-700 dark:hover:bg-blue-400">Selecionar</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center" id="user-rgf-filtro-contador">${funcionarios.length} resultado${funcionarios.length !== 1 ? 's' : ''}</p>
         </div>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">Clique em "Selecionar" no funcionário desejado para carregar seus dados.</p>
       </div>
     `;
     resultEl.innerHTML = html;
@@ -679,6 +688,80 @@
         const input = document.getElementById('user-rgf-consult-input');
         if (input) input.value = rgf;
         // Carrega direto os dados do funcionário selecionado
+        consultarPorRGF(rgf);
+      });
+    });
+
+    // Bind do refinamento local da tabela (filtra sem chamar a API)
+    const filtroLocalInput = document.getElementById('user-rgf-filtro-local');
+    const tbody = document.getElementById('user-rgf-tabela-corpo');
+    const contadorEl = document.getElementById('user-rgf-filtro-contador');
+    if (filtroLocalInput && tbody) {
+      filtroLocalInput.addEventListener('input', () => {
+        const texto = filtroLocalInput.value.toLowerCase().trim();
+        if (!texto) {
+          tbody.innerHTML = window.__rgfFiltroLista.map(f => `
+            <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer select-none rgf-list-row"
+                data-rgf="${f.matricula}"
+                data-nome="${f.nome}"
+                data-cargo="${f.cargo || '—'}"
+                data-secretaria="${f.secretaria || '—'}"
+                data-situacao="${f.situacao || '—'}"
+                data-idfunselec="${f.idfunselec || ''}">
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${f.matricula}</td>
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-100">${f.nome}</td>
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.cargo || '—'}</td>
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.secretaria || '—'}</td>
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${f.situacao === 'Ativo' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}">${f.situacao || '—'}</span>
+              </td>
+              <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+                <button class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded hover:bg-blue-700 dark:hover:bg-blue-400">Selecionar</button>
+              </td>
+            </tr>
+          `).join('');
+          if (contadorEl) contadorEl.textContent = window.__rgfFiltroLista.length + ' resultado' + (window.__rgfFiltroLista.length !== 1 ? 's' : '');
+          _bindRowButtons(tbody);
+          return;
+        }
+        const filtrados = window.__rgfFiltroLista.filter(f => {
+          const campo = (f.matricula || '') + ' ' + (f.nome || '') + ' ' + (f.cargo || '') + ' ' + (f.secretaria || '') + ' ' + (f.situacao || '');
+          return campo.toLowerCase().includes(texto);
+        });
+        tbody.innerHTML = filtrados.map(f => `
+          <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer select-none rgf-list-row"
+              data-rgf="${f.matricula}"
+              data-nome="${f.nome}"
+              data-cargo="${f.cargo || '—'}"
+              data-secretaria="${f.secretaria || '—'}"
+              data-situacao="${f.situacao || '—'}"
+              data-idfunselec="${f.idfunselec || ''}">
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${f.matricula}</td>
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-100">${f.nome}</td>
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.cargo || '—'}</td>
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${f.secretaria || '—'}</td>
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold ${f.situacao === 'Ativo' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'}">${f.situacao || '—'}</span>
+            </td>
+            <td class="px-3 py-2 border-b border-gray-100 dark:border-zinc-800">
+              <button class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded hover:bg-blue-700 dark:hover:bg-blue-400">Selecionar</button>
+            </td>
+          </tr>
+        `).join('');
+        if (contadorEl) contadorEl.textContent = filtrados.length + ' resultado' + (filtrados.length !== 1 ? 's' : '');
+        _bindRowButtons(tbody);
+      });
+    }
+  }
+
+  // Re-bind dos botoes Selecionar apos re-render do tbody
+  function _bindRowButtons(tbody) {
+    tbody.querySelectorAll('.rgf-list-row button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.rgf-list-row');
+        const rgf = row.dataset.rgf.split('/')[0].replace(/\D/g, '');
+        const input = document.getElementById('user-rgf-consult-input');
+        if (input) input.value = rgf;
         consultarPorRGF(rgf);
       });
     });
