@@ -443,6 +443,12 @@
         if (fab) fab.classList.toggle('hidden', name !== 'orders');
         // Guarda a aba ativa
         global.__state.adminActiveTab = name;
+
+        // Garante que o calendário de feriados seja (re)criado e os feriados
+        // preselecionados sempre que a aba Cardápio for ativada
+        if (name === 'menu' && global.bindHolidayCalendarHandlers) {
+          global.bindHolidayCalendarHandlers();
+        }
       };
 
       adminTabsNav.addEventListener('click', (e) => {
