@@ -428,6 +428,11 @@
         <div class="p-4 space-y-2 bg-white dark:bg-zinc-900">
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Função</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.cargo || '—'}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Local</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.localtrabalho || '—'}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Secretaria</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.secretaria || '—'}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Tipo Contrato</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.tipocontrato || '—'}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Admissão</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.dataadmissao ? new Date(latest.dataadmissao).toLocaleDateString('pt-BR') : '—'}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Horas Semanais</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${latest.horas_semanais ? latest.horas_semanais.replace('.', ',') + 'h' : '—'}</span></div>
+          <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Salário Base</span><span class="font-semibold text-gray-800 dark:text-gray-100 text-right">${fmtMoneyUser(latest.salariobase)}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Competência</span><span class="font-semibold text-gray-800 dark:text-gray-100">${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Bruto</span><span class="font-bold text-green-700 dark:text-green-400">${fmtMoneyUser(latest.bruto)}</span></div>
           <div class="flex justify-between gap-2 text-sm"><span class="text-gray-500 dark:text-gray-400">Líquido total</span><span class="font-bold text-blue-700 dark:text-blue-400">${fmtMoneyUser(latest.liquido)}</span></div>
@@ -439,13 +444,7 @@
       const rend = verbas.filter(v => v.tipoVerba === 'Rendimentos');
       const desc = verbas.filter(v => v.tipoVerba === 'Descontos');
       const row = (v) => `<div class="flex justify-between gap-2 py-1 text-sm border-b border-gray-100 dark:border-zinc-800"><span class="text-gray-700 dark:text-gray-300 flex-1">${v.desnoverba}</span><span class="font-bold ${v.tipoVerba === 'Rendimentos' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'} whitespace-nowrap">${v.tipoVerba === 'Rendimentos' ? '+' : '−'} ${fmtMoneyUser(Math.abs(parseFloat(v.valorverba)))}</span></div>`;
-      html += `
-        <div class="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
-          <h4 class="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm">Contracheque ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}</h4>
-          ${rend.map(row).join('')}
-          ${desc.map(row).join('')}
-          <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-right">fonte: portal da transparência</p>
-        </div>`;
+      html += `\n        <div class="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 mt-3">\n          <div class="flex flex-wrap justify-between items-center gap-2 mb-3">\n            <h4 class="font-bold text-gray-800 dark:text-gray-100">Contracheque — ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}</h4>\n            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">fonte: portal da transparência</span>\n          </div>\n          <p class="text-xs font-bold text-gray-400 uppercase mb-1">Rendimentos</p>\n          ${rend.map(verbaRow).join('')}\n          <p class="text-xs font-bold text-gray-400 uppercase mt-4 mb-1">Descontos</p>\n          ${desc.map(verbaRow).join('')}\n          <div class="mt-4 pt-3 border-t-2 border-gray-200 dark:border-zinc-700 grid grid-cols-3 gap-2 text-center">\n            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Bruto</p><p class="font-bold text-green-700 dark:text-green-400 text-sm">${fmtMoneyUser(totalR)}</p></div>\n            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Descontos</p><p class="font-bold text-red-600 dark:text-red-400 text-sm">${fmtMoneyUser(totalD)}</p></div>\n            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Líquido</p><p class="font-bold text-blue-700 dark:text-blue-400 text-sm text-base">${fmtMoneyUser(liq)}</p></div>\n          </div>\n          ${notaAdiantamento}\n        </div>`;
     }
     resultEl.innerHTML = html;
   }

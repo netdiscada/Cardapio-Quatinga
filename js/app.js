@@ -235,7 +235,7 @@
         if (daysUntilMonday === 0) daysUntilMonday = 7;
         const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
         nextMonday.setHours(0, 0, 0, 0);
-        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime() }, { merge: true });
+        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime(), recado: document.getElementById('proximaSemanaRecado')?.value?.trim() || '' }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
         // Dispara notificação push real via Vercel endpoint

@@ -238,8 +238,39 @@
   // ===== Atualiza a view do usuario (imagem + badge de semana) =====
   function updateUserViewUI() {
   const st = S();
+  // Badge da semana é clicável (quase secreto): troca de semana se houver próxima semana disponível
   const badgeText = document.getElementById('week-badge-text');
   const badgeContainer = document.getElementById('week-badge-indicator');
+  if (badgeText && badgeContainer) {
+    badgeContainer.style.cursor = 'pointer';
+    badgeContainer.title = 'Trocar de semana (se houver próxima semana)';
+    badgeContainer.addEventListener('click', () => {
+      if (typeof global.turnWeek === 'function') {
+        const st = S();
+        if (st.currentMenuData && st.currentMenuData.nextMenuImageBase64) {
+          global.turnWeek();
+        } else {
+          showToast('Não há cardápio da próxima semana para iniciar.', 'info');
+        }
+      } else {
+        showToast('Função de troca de semana indisponível.', 'error');
+      }
+    });
+  }
+
+  // ===== Caixa de recado do encarregado =====
+  // Mostra apenas se houver um recado definido no menuData da semana atual
+  const recadoCaixa = document.getElementById('recado-caixa');
+  const recadoTexto = document.getElementById('recado-texto');
+  if (recadoCaixa && recadoTexto) {
+    const recado = st.currentMenuData.recado || '';
+    if (recado && recado.trim()) {
+      recadoTexto.textContent = recado.trim();
+      recadoCaixa.classList.remove('hidden');
+    } else {
+      recadoCaixa.classList.add('hidden');
+    }
+  }
 
   if (badgeText && badgeContainer) {
     if (st.viewingNextWeek) {

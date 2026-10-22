@@ -488,6 +488,16 @@
                     <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
                         <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
                     </div>
+
+                    <!-- ===== Caixa de recado do encarregado (acima do cardápio) ===== -->
+                    <div id="recado-caixa" class="hidden mt-4 rounded-xl border-l-4 border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 p-4 shadow-sm flex items-start gap-3 transition-colors">
+                        <div class="flex-shrink-0 mt-0.5 text-xl">⚠️</div>
+                        <div>
+                            <p class="text-sm font-bold text-red-700 dark:text-red-400 leading-none uppercase tracking-tight">Atenção</p>
+                            <p id="recado-texto" class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mt-1"></p>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Autenticação do Usuário via RGF -->
@@ -858,6 +868,15 @@
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400" id="holidayCount">
                                     0 feriados selecionados
                                 </p>
+                            </div>
+
+                            <!-- Recado do encarregado para os funcionários -->
+                            <div class="mt-5 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 bg-gray-50 dark:bg-zinc-900/50">
+                                <h5 class="font-bold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                                    <span>💬</span> Recado para os funcionários
+                                </h5>
+                                <textarea id="proximaSemanaRecado" rows="2" placeholder="Ex: AMANHÃ O CARDÁPIO DE SEXTA SERÁ O DE QUINTA" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition-colors"></textarea>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Aparece na tela do cardápio dos funcionários (acima da imagem). Deixe vazio para não mostrar.</p>
                             </div>
                         </div>
                         <button id="uploadImageBtn" class="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-zinc-700 disabled:text-gray-500 disabled:cursor-not-allowed transition shadow-md cursor-pointer" disabled>
@@ -1245,18 +1264,18 @@
     <!-- ===== Modulos do app v2 (JS classico, sem imports ES) ===== -->
     <script src="js/config.js?v=2026.1"></script>
     <script src="js/firebase.js?v=2026.1"></script>
-    <script src="js/db.js?v=2026.1"></script>
+    <script src="js/db.js?v=2026.2"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.5"></script>
+    <script src="js/ui.js?v=2026.6"></script>
     <script src="js/order.js?v=2026.1"></script>
-    <script src="js/userhelp.js?v=2026.7"></script>
+    <script src="js/userhelp.js?v=2026.8"></script>
     <script src="js/admin.js?v=2026.3"></script>
     <script src="js/financas.js?v=2026.1"></script>
     <script src="js/notificationChecker.js?v=2026.1"></script>
     <script src="js/notificationTrigger.js?v=2026.1"></script>
     <script src="js/pushRegistration.js?v=2026.1"></script>
     <script src="js/appUpdate.js?v=2026.1"></script>
-    <script src="js/app.js?v=2026.5"></script>
+    <script src="js/app.js?v=2026.6"></script>
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
             <!-- Topo: fecha + controles de zoom -->
             <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">

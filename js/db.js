@@ -162,6 +162,7 @@ function safeToMillis(ts) {
           menuImageBase64: data.nextMenuImageBase64,
           holidays: data.nextHolidays || [],
           menuText: data.nextMenuText || {},
+          recado: data.recado || '',
           nextMenuImageBase64: '',
           nextHolidays: [],
           nextMenuText: {},
