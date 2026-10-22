@@ -459,6 +459,14 @@
 
       // Aba inicial (ou última usada)
       showPanel(global.__state.adminActiveTab || 'menu');
+
+      // Garante que o calendário de feriados seja inicializado mesmo quando a
+      // página recarrega diretamente em outra aba (ex: orders). O calendário
+      // só existe no DOM quando a aba Cardápio está ativa, então bind
+      // só funciona se o elemento estiver presente.
+      if (global.bindHolidayCalendarHandlers && document.getElementById('holidayCalendar')) {
+        global.bindHolidayCalendarHandlers();
+      }
     }
   }
 
