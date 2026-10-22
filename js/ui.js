@@ -133,6 +133,8 @@
     localStorage.setItem('currentAppView', 'admin');
     // Foca na Proxima Semana se ela ja existir na hora de abrir o painel
     setAdminTab(!!st.currentMenuData.nextMenuImageBase64);
+    // Renderiza a aba Cardápio (onde fica o calendário de feriados)
+    showPanel('menu');
     global.loadAndDisplayMenu();
     global.loadAndRenderEmployees();
     // Inicia checker de notificações para admin
