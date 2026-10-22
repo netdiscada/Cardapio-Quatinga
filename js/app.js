@@ -392,7 +392,7 @@
         const btn = document.getElementById('deleteNextWeekBtn');
         btn.disabled = true; btn.textContent = "A apagar...";
         try {
-          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null });
+          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null, recado: '' });
           const snap = await fb.getDocs(fb.collection(global.db, "pedidosDaSemana"));
           const batch = fb.writeBatch(global.db);
           snap.forEach(d => { if (d.data().isNextWeek === true) batch.delete(d.ref); });
@@ -470,6 +470,29 @@
 
       // Expõe showPanel para uso externo (ui.js showAdminView precisa chamá-lo)
       global.showAdminPanel = showPanel;
+
+      // ===== Badge da semana clicável (adicionado uma única vez aqui, no main) =====
+      const badgeText = document.getElementById('week-badge-text');
+      const badgeContainer = document.getElementById('week-badge-indicator');
+      if (badgeText && badgeContainer) {
+        badgeContainer.style.cursor = 'pointer';
+        badgeContainer.title = 'Alternar entre semana atual e próxima semana';
+        badgeContainer.addEventListener('click', () => {
+          const st = S();
+          const temProxima = st.currentMenuData && st.currentMenuData.nextMenuImageBase64;
+          if (!temProxima && !st.viewingNextWeek) {
+            showToast('Não há cardápio da próxima semana disponível.', 'info');
+            return;
+          }
+          st.viewingNextWeek = !st.viewingNextWeek;
+          if (typeof global.updateUserViewUI === 'function') global.updateUserViewUI();
+          showToast(
+            st.viewingNextWeek ? 'Visualizando cardápio da próxima semana' : 'Visualizando cardápio da semana atual',
+            'info',
+            2500
+          );
+        });
+      }
     }
   }
   // =====================================================================

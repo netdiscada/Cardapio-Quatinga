@@ -238,29 +238,7 @@
   // ===== Atualiza a view do usuario (imagem + badge de semana) =====
   function updateUserViewUI() {
   const st = S();
-  // Badge da semana clicável: alterna visualização entre semana atual e próxima semana (apenas visualização, não faz virada)
-  const badgeText = document.getElementById('week-badge-text');
-  const badgeContainer = document.getElementById('week-badge-indicator');
-  if (badgeText && badgeContainer) {
-    badgeContainer.style.cursor = 'pointer';
-    badgeContainer.title = 'Alternar entre semana atual e próxima semana';
-    badgeContainer.addEventListener('click', () => {
-      const st = S();
-      const temProxima = st.currentMenuData && st.currentMenuData.nextMenuImageBase64;
-      if (!temProxima && !st.viewingNextWeek) {
-        showToast('Não há cardápio da próxima semana disponível.', 'info');
-        return;
-      }
-      // Alterna visualização
-      st.viewingNextWeek = !st.viewingNextWeek;
-      global.updateUserViewUI();
-      showToast(
-        st.viewingNextWeek ? 'Visualizando cardápio da próxima semana' : 'Visualizando cardápio da semana atual',
-        'info',
-        2500
-      );
-    });
-  }
+  // ===== Badge da semana: apenas visual (sem listener aqui; adicionado uma vez no main) ====
 
   // ===== Caixa de recado do encarregado =====
   // Mostra apenas se houver um recado definido no menuData da semana atual
