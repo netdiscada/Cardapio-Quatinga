@@ -467,9 +467,11 @@
       if (global.bindHolidayCalendarHandlers && document.getElementById('holidayCalendar')) {
         global.bindHolidayCalendarHandlers();
       }
+
+      // Expõe showPanel para uso externo (ui.js showAdminView precisa chamá-lo)
+      global.showAdminPanel = showPanel;
     }
   }
-
   // =====================================================================
   // BOOT
   // =====================================================================
