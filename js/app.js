@@ -470,29 +470,30 @@
 
       // Expõe showPanel para uso externo (ui.js showAdminView precisa chamá-lo)
       global.showAdminPanel = showPanel;
+    }
 
-      // ===== Badge da semana clicável (adicionado uma única vez aqui, no main) =====
-      const badgeText = document.getElementById('week-badge-text');
-      const badgeContainer = document.getElementById('week-badge-indicator');
-      if (badgeText && badgeContainer) {
-        badgeContainer.style.cursor = 'pointer';
-        badgeContainer.title = 'Alternar entre semana atual e próxima semana';
-        badgeContainer.addEventListener('click', () => {
-          const st = S();
-          const temProxima = st.currentMenuData && st.currentMenuData.nextMenuImageBase64;
-          if (!temProxima && !st.viewingNextWeek) {
-            showToast('Não há cardápio da próxima semana disponível.', 'info');
-            return;
-          }
-          st.viewingNextWeek = !st.viewingNextWeek;
-          if (typeof global.updateUserViewUI === 'function') global.updateUserViewUI();
-          showToast(
-            st.viewingNextWeek ? 'Visualizando cardápio da próxima semana' : 'Visualizando cardápio da semana atual',
-            'info',
-            2500
-          );
-        });
-      }
+    // ===== Badge da semana clicável (adicionado uma única vez aqui, no main) =====
+    // Registrado FORA do bloco adminTabsNav para funcionar na visão do usuário também
+    const badgeText = document.getElementById('week-badge-text');
+    const badgeContainer = document.getElementById('week-badge-indicator');
+    if (badgeText && badgeContainer) {
+      badgeContainer.style.cursor = 'pointer';
+      badgeContainer.title = 'Alternar entre semana atual e próxima semana';
+      badgeContainer.addEventListener('click', () => {
+        const st = S();
+        const temProxima = st.currentMenuData && st.currentMenuData.nextMenuImageBase64;
+        if (!temProxima && !st.viewingNextWeek) {
+          showToast('Não há cardápio da próxima semana disponível.', 'info');
+          return;
+        }
+        st.viewingNextWeek = !st.viewingNextWeek;
+        if (typeof global.updateUserViewUI === 'function') global.updateUserViewUI();
+        showToast(
+          st.viewingNextWeek ? 'Visualizando cardápio da próxima semana' : 'Visualizando cardápio da semana atual',
+          'info',
+          2500
+        );
+      });
     }
   }
   // =====================================================================
