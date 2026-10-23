@@ -238,7 +238,9 @@
   // ===== Atualiza a view do usuario (imagem + badge de semana) =====
   function updateUserViewUI() {
   const st = S();
-  // ===== Badge da semana: apenas visual (sem listener aqui; adicionado uma vez no main) ====
+  // ===== Badge da semana: referências do DOM (listener de clique vive no main() do app.js) ====
+  const badgeText = document.getElementById('week-badge-text');
+  const badgeContainer = document.getElementById('week-badge-indicator');
 
   // ===== Caixa de recado do encarregado =====
   // Mostra apenas se houver um recado definido no menuData da semana atual
