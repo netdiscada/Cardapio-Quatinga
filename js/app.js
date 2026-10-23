@@ -304,31 +304,41 @@
   // MAIN — wiring de TODOS os listeners (equivale ao main() do v1.x)
   // =====================================================================
   function main() {
-    document.getElementById('admin-view-current').addEventListener('click', () => setAdminTab(false));
-    document.getElementById('admin-view-next').addEventListener('click', () => setAdminTab(true));
+    const adminViewCurrent = document.getElementById('admin-view-current');
+    if (adminViewCurrent) adminViewCurrent.addEventListener('click', () => setAdminTab(false));
+    const adminViewNext = document.getElementById('admin-view-next');
+    if (adminViewNext) adminViewNext.addEventListener('click', () => setAdminTab(true));
 
-    document.getElementById('btn-turn-week').addEventListener('click', global.turnWeek);
-    document.getElementById('btn-clear-current-orders').addEventListener('click', global.clearCurrentOrders);
+    const btnTurnWeek = document.getElementById('btn-turn-week');
+    if (btnTurnWeek) btnTurnWeek.addEventListener('click', global.turnWeek);
+    const btnClearCurrentOrders = document.getElementById('btn-clear-current-orders');
+    if (btnClearCurrentOrders) btnClearCurrentOrders.addEventListener('click', global.clearCurrentOrders);
 
     const rgfInput = document.getElementById('employeeRGF');
     let rgfDebounceTimeout;
-    rgfInput.addEventListener('input', () => {
-      clearTimeout(rgfDebounceTimeout);
-      rgfDebounceTimeout = setTimeout(async () => {
-        global.__state.autoSwitchDone = false;
-        const val = rgfInput.value.trim();
-        localStorage.setItem('employeeRGF', val);
-        await findEmployeeByRGF(val);
-        await validateForm();
-      }, 400);
-    });
-    rgfInput.addEventListener('blur', () => localStorage.setItem('employeeRGF', rgfInput.value));
+    if (rgfInput) {
+      rgfInput.addEventListener('input', () => {
+        clearTimeout(rgfDebounceTimeout);
+        rgfDebounceTimeout = setTimeout(async () => {
+          global.__state.autoSwitchDone = false;
+          const val = rgfInput.value.trim();
+          localStorage.setItem('employeeRGF', val);
+          await findEmployeeByRGF(val);
+          await validateForm();
+        }, 400);
+      });
+      rgfInput.addEventListener('blur', () => localStorage.setItem('employeeRGF', rgfInput.value));
+    }
 
-    document.getElementById('wizard-options').addEventListener('click', handleWizardSelection);
-    document.getElementById('openConfirmationModal').addEventListener('click', openConfirmationModal);
-    document.getElementById('submitOrder').addEventListener('click', submitOrder);
+    const wizardOptions = document.getElementById('wizard-options');
+    if (wizardOptions) wizardOptions.addEventListener('click', handleWizardSelection);
+    const openConfirmationModal = document.getElementById('openConfirmationModal');
+    if (openConfirmationModal) openConfirmationModal.addEventListener('click', openConfirmationModal);
+    const submitOrderBtn = document.getElementById('submitOrder');
+    if (submitOrderBtn) submitOrderBtn.addEventListener('click', submitOrder);
 
-    document.getElementById('btn-edit-wizard').addEventListener('click', () => {
+    const btnEditWizard = document.getElementById('btn-edit-wizard');
+    if (btnEditWizard) btnEditWizard.addEventListener('click', () => {
       document.getElementById('confirmation-modal').classList.add('hidden');
       global.__state.currentDayIndex = 0;
       global.__state.userChoices = [];
@@ -337,23 +347,32 @@
       renderWizardStep(0);
     });
 
-    document.getElementById('btn-view-public-report').addEventListener('click', openPublicReportModal);
+    const btnViewPublicReport = document.getElementById('btn-view-public-report');
+    if (btnViewPublicReport) btnViewPublicReport.addEventListener('click', openPublicReportModal);
     document.querySelectorAll('.cancel-modal-btn, #custom-confirm-cancel-btn').forEach(btn => { btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')); });
-    document.getElementById('switchToAdmin').addEventListener('click', () => {
+    const switchToAdmin = document.getElementById('switchToAdmin');
+    if (switchToAdmin) switchToAdmin.addEventListener('click', () => {
       if (auth?.currentUser && auth.currentUser.uid === APP_CONFIG.ADMIN_UID) { localStorage.setItem('currentAppView', 'admin'); showAdminView(); }
       else { document.getElementById('admin-login-modal').classList.remove('hidden'); }
     });
 
-    document.getElementById('admin-login-form').addEventListener('submit', handleAdminLogin);
-    document.getElementById('adminLogoutBtn').addEventListener('click', handleAdminLogout);
-    document.getElementById('switchToUserFromAdmin').addEventListener('click', () => { localStorage.setItem('currentAppView', 'user'); showUserView(); });
-    document.getElementById('add-employee-form').addEventListener('submit', handleAddEmployee);
-    document.getElementById('employee-list-container').addEventListener('click', (e) => {
+    const adminLoginForm = document.getElementById('admin-login-form');
+    if (adminLoginForm) adminLoginForm.addEventListener('submit', handleAdminLogin);
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+    if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', handleAdminLogout);
+    const switchToUserFromAdmin = document.getElementById('switchToUserFromAdmin');
+    if (switchToUserFromAdmin) switchToUserFromAdmin.addEventListener('click', () => { localStorage.setItem('currentAppView', 'user'); showUserView(); });
+    const addEmployeeForm = document.getElementById('add-employee-form');
+    if (addEmployeeForm) addEmployeeForm.addEventListener('submit', handleAddEmployee);
+    const employeeListContainer = document.getElementById('employee-list-container');
+    if (employeeListContainer) employeeListContainer.addEventListener('click', (e) => {
       if (e.target.closest('.edit-employee-btn')) openEmployeeEditModal(e.target.closest('.edit-employee-btn').dataset.id, e.target.closest('.edit-employee-btn').dataset.name);
       if (e.target.closest('.delete-employee-btn')) handleDeleteEmployee(e.target.closest('.delete-employee-btn').dataset.id, e.target.closest('.delete-employee-btn').dataset.name);
     });
-    document.getElementById('edit-employee-form').addEventListener('submit', handleSaveEmployeeChanges);
-    document.getElementById('ordersTableContainer').addEventListener('click', (e) => {
+    const editEmployeeForm = document.getElementById('edit-employee-form');
+    if (editEmployeeForm) editEmployeeForm.addEventListener('submit', handleSaveEmployeeChanges);
+    const ordersTableContainer = document.getElementById('ordersTableContainer');
+    if (ordersTableContainer) ordersTableContainer.addEventListener('click', (e) => {
       if (e.target.closest('.edit-order-btn')) openEditOrderModal(e.target.closest('.edit-order-btn').dataset.id);
       if (e.target.closest('.delete-order-btn')) handleDeleteOrder(e.target.closest('.delete-order-btn').dataset.id, e.target.closest('.delete-order-btn').dataset.name);
     });
@@ -472,8 +491,8 @@
       global.showAdminPanel = showPanel;
     }
 
-    // ===== Badge da semana clicável (adicionado uma única vez aqui, no main) =====
-    // Registrado FORA do bloco adminTabsNav para funcionar na visão do usuário também
+    // ===== Badge da semana clicável (adicionado uma única vez aqui, no main) ====
+    // FORA do bloco adminTabsNav para funcionar na visão do usuário também
     const badgeText = document.getElementById('week-badge-text');
     const badgeContainer = document.getElementById('week-badge-indicator');
     if (badgeText && badgeContainer) {
