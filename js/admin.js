@@ -85,15 +85,15 @@
       // Renderiza calendário interativo de feriados (NOVO v3)
       renderHolidayCalendar();
 
+      // Garante que os handlers de feriado estejam vinculados DEPOIS que os dados do Firestore carregam.
+      // Isso evita a condição de corrida: bindHolidayCalendarHandlers era chamado antes dos dados
+      // chegarem, então nextHolidays vindo do snapshot resettava a seleção visual.
+      if (global.bindHolidayCalendarHandlers && document.getElementById('holidayCalendar')) {
+          global.bindHolidayCalendarHandlers();
+      }
+
       global.updateUserViewUI();
     }, (error) => { showToast("Erro ao carregar o cardápio.", 'error'); });
-
-    // ===== Garante que os handlers de feriado estejam vinculados após os dados do Firestore carregarem =====
-    // Isso corrige condição de corrida: bindHolidayCalendarHandlers era chamado na inicialização do app
-    // (antes dos dados chegarem), então nextHolidays vindo do snapshot resetting a seleção.
-    if (global.bindHolidayCalendarHandlers && document.getElementById('holidayCalendar')) {
-        global.bindHolidayCalendarHandlers();
-    }
 }
 
   // ===== Carrega dados admin (pedidos, com abas semana ativa/proxima) =====
@@ -530,6 +530,11 @@
     // Re-renderiza para aplicar a pré-seleção automática de feriados
     renderHolidayCalendar();
 
+    // Garante que handlers sejam vinculados apenas uma vez (evita listeners duplicados
+    // que se acumulam a cada chamada de bindHolidayCalendarHandlers)
+    if (global.__holidayHandlersBound) return;
+    global.__holidayHandlersBound = true;
+
     // Delegação de eventos para os dias do calendário
     calendarContainer.addEventListener('click', (e) => {
       const dayEl = e.target.closest('[data-day-id]');
@@ -547,6 +552,12 @@
         holidays.push(dayId);
       }
       renderHolidayCalendar();
+      // Persiste no Firestore
+      try {
+        fb.setDoc(global.getMenuDocRef(), { nextHolidays: holidays }, { merge: true });
+      } catch (err) {
+        console.log('[Feriados] Erro ao persistir nextHolidays:', err);
+      }
     });
 
     // Botões de seleção rápida
@@ -556,8 +567,14 @@
     if (selectWeekdaysBtn) {
       selectWeekdaysBtn.addEventListener('click', () => {
         const st = S();
-        st.currentMenuData.nextHolidays = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
+        const weekdays = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
+        st.currentMenuData.nextHolidays = weekdays;
         renderHolidayCalendar();
+        try {
+          fb.setDoc(global.getMenuDocRef(), { nextHolidays: weekdays }, { merge: true });
+        } catch (err) {
+          console.log('[Feriados] Erro ao persistir Dias Úteis:', err);
+        }
       });
     }
 
@@ -566,6 +583,11 @@
         const st = S();
         st.currentMenuData.nextHolidays = [];
         renderHolidayCalendar();
+        try {
+          fb.setDoc(global.getMenuDocRef(), { nextHolidays: [] }, { merge: true });
+        } catch (err) {
+          console.log('[Feriados] Erro ao persistir Limpar:', err);
+        }
       });
     }
   }
