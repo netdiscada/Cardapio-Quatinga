@@ -87,7 +87,14 @@
 
       global.updateUserViewUI();
     }, (error) => { showToast("Erro ao carregar o cardápio.", 'error'); });
-  }
+
+    // ===== Garante que os handlers de feriado estejam vinculados após os dados do Firestore carregarem =====
+    // Isso corrige condição de corrida: bindHolidayCalendarHandlers era chamado na inicialização do app
+    // (antes dos dados chegarem), então nextHolidays vindo do snapshot resetting a seleção.
+    if (global.bindHolidayCalendarHandlers && document.getElementById('holidayCalendar')) {
+        global.bindHolidayCalendarHandlers();
+    }
+}
 
   // ===== Carrega dados admin (pedidos, com abas semana ativa/proxima) =====
   function loadAdminData() {
