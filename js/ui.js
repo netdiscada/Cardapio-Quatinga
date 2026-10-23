@@ -17,9 +17,8 @@
     const toast = document.getElementById('app-toast');
     if (!toast) return;
     toast.textContent = message;
-    toast.className = 'show';
-    toast.classList.add(type);
-    setTimeout(() => { toast.className = toast.className.replace('show', ''); }, duration);
+    toast.classList.add('show', type);
+    setTimeout(() => toast.classList.remove('show'), duration);
   }
 
   // ===== Modal generico de confirmacao =====
