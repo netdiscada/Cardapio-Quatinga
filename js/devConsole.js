@@ -45,7 +45,10 @@
   global.addEventListener('error', (event) => {
     // Erro de carregamento de arquivo (script/imagem) não tem event.error
     if (event.target && event.target !== global && (event.target.src || event.target.href)) {
-      add('error', [`Falha ao carregar ${event.target.tagName}: ${event.target.src || event.target.href}`]);
+      const url = event.target.src || event.target.href;
+      // <img src=""> de propósito (antes do cardápio carregar) aponta para a própria página: não é erro
+      if (event.target.getAttribute('src') === '' || url === location.href) return;
+      add('error', [`Falha ao carregar ${event.target.tagName}: ${url}`]);
       return;
     }
     const where = event.filename ? ` (${event.filename.split('/').pop()}:${event.lineno}:${event.colno})` : '';
