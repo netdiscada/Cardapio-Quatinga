@@ -170,7 +170,7 @@ function safeToMillis(ts) {
         }, { merge: true });
         await batch.commit();
         showToast("Nova semana iniciada com sucesso!", "success");
-        global.adminViewingNextWeek = false; loadAdminData();
+        setAdminTab(false);
       } catch (error) { showToast("Falha ao iniciar a semana.", "error"); }
       finally { btn.disabled = false; btn.innerHTML = '🔄 Forçar Atualização de Semana'; }
     });

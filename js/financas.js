@@ -327,15 +327,17 @@
       const snapMes = await fb.getDocs(fb.query(lancamentosRef(F.rgf),
         fb.where('ano', '==', ano), fb.where('mes', '==', mes), fb.where('fixo', '==', true)));
       const existentes = new Set();
-      snapMes.forEach(d => existentes.add(d.data().descricao + '|' + d.data().categoria));
+      snapMes.forEach(d => existentes.add((d.data().descricao || '') + '|' + d.data().categoria));
+      const alvo = ano * 12 + mes;
 
       const batch = fb.writeBatch(global.db);
       let criados = 0;
       snap.forEach(d => {
         const l = d.data();
         const chave = (l.descricao || '') + '|' + l.categoria;
-        // Clona fixo de OUTRO mês que ainda não existe neste mês
-        if (!(l.mes === mes && l.ano === ano) && !existentes.has(chave)) {
+        // Clona fixo de um mês ANTERIOR que ainda não existe neste mês
+        // (navegar para meses passados não deve criar fixos antes de existirem)
+        if ((l.ano * 12 + l.mes) < alvo && !existentes.has(chave)) {
           existentes.add(chave); // marca pra não duplicar
           batch.set(lancamentosRef(F.rgf).doc(), {
             ...l, // copia todos os campos
@@ -499,11 +501,18 @@
     if (editId) {
       // EDIÇÃO: atualiza só este lançamento
       const docRef = lancamentosRef(F.rgf).doc(editId);
+      // set() sem merge substitui o documento: preserva mes/ano/createdAt/origem do
+      // original, senão o lançamento some do mês (a consulta filtra por ano+mes).
+      const original = F.lancamentos.find(x => x.id === editId) || {};
       const payload = {
         ...basePayload,
+        mes: original.mes ?? F.mesAtual,
+        ano: original.ano ?? F.anoAtual,
+        createdAt: original.createdAt || fb.serverTimestamp(),
         valor: tipo === 'saida' ? -valor : valor,
         descricao: descricao || null,
       };
+      if (original.origem) payload.origem = original.origem;
       if (fixo) {
         payload.fixo = true;
         delete payload.parcela; delete payload.grupoParcela;
@@ -595,8 +604,6 @@
     try {
       await fb.deleteDoc(lancamentosRef(F.rgf).doc(id));
       global.showToast('Lançamento excluído com sucesso!', 'success');
-      // Força atualização da lista
-      escutarMes();
     } catch (err) {
       console.error('Erro ao excluir:', err);
       global.showToast('Erro: ' + err.message, 'error');
@@ -626,7 +633,6 @@
       });
       if (count > 0) await batch.commit();
       global.showToast(count > 0 ? `${count} lançamento(s) excluído(s) com sucesso!` : 'Nada para excluir.', 'success');
-      escutarMes();
     } catch (err) {
       console.error('Erro ao excluir todos:', err);
       global.showToast('Erro: ' + err.message, 'error');
