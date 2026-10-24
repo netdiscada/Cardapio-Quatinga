@@ -96,6 +96,45 @@ function safeToMillis(ts) {
   // ROTACAO DA SEMANA (port fiel do v1.x)
   // =====================================================================
 
+  // ===== Calendario das semanas do cardapio =====
+  // Sabado e domingo ja contam como a semana que comeca na segunda seguinte (a virada
+  // e no sabado 00:00). O doc guarda weekMonday (semana do cardapio atual) e
+  // nextWeekMonday (semana do cardapio da proxima semana), em ms.
+
+  function mondayOf(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dow = d.getDay(); // 0=dom ... 6=sab
+    const shift = dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow; // fim de semana -> proxima segunda
+    d.setDate(d.getDate() + shift);
+    return d;
+  }
+
+  function addDays(date, days) {
+    const d = new Date(date.getTime());
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  // Segunda-feira da semana do proximo cardapio a ser lancado
+  function getNextMenuMonday(menuData) {
+    const data = menuData || {};
+    if (data.nextMenuImageBase64 && data.nextWeekMonday) return new Date(data.nextWeekMonday);
+    const base = mondayOf(new Date());
+    if (!data.weekMonday) return addDays(base, 7);
+    const afterCurrent = addDays(new Date(data.weekMonday), 7);
+    // Cardapio atual atrasado (ninguem lancou o da semana): o proximo e a semana corrente
+    return afterCurrent > base ? afterCurrent : base;
+  }
+
+  // Virada automatica: sabado 00:00 antes da segunda da semana nova
+  function getRotationTime(nextMonday) {
+    return addDays(nextMonday, -2).getTime();
+  }
+
+  global.getNextMenuMonday = getNextMenuMonday;
+  global.getRotationTime = getRotationTime;
+  global.__weekCalendar = { mondayOf, addDays };
+
   // autoTurnWeek: transacao read-write com lock + metadata.fromCache (v1.x)
   async function autoTurnWeek(menuData) {
     try {
@@ -112,9 +151,11 @@ function safeToMillis(ts) {
             menuImageBase64: menuData.nextMenuImageBase64 || '',
             holidays: menuData.nextHolidays || [],
             menuText: menuData.nextMenuText || {},
+            weekMonday: serverData.nextWeekMonday || null,
             nextMenuImageBase64: '',
             nextHolidays: [],
             nextMenuText: {},
+            nextWeekMonday: null,
             targetRotationDate: null
           }, { merge: true });
           isWinner = true; // Confirma que ESSE celular obteve sucesso em virar a semana
@@ -163,9 +204,11 @@ function safeToMillis(ts) {
           holidays: data.nextHolidays || [],
           menuText: data.nextMenuText || {},
           recado: data.recado || '',
+          weekMonday: data.nextWeekMonday || null,
           nextMenuImageBase64: '',
           nextHolidays: [],
           nextMenuText: {},
+          nextWeekMonday: null,
           targetRotationDate: null
         }, { merge: true });
         await batch.commit();

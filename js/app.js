@@ -214,12 +214,9 @@
         } else {
           selectedHolidays = Array.from(document.querySelectorAll('.holiday-checkbox:checked')).map(cb => cb.value);
         }
-        const now = new Date();
-        let daysUntilMonday = (1 + 7 - now.getDay()) % 7;
-        if (daysUntilMonday === 0) daysUntilMonday = 7;
-        const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
-        nextMonday.setHours(0, 0, 0, 0);
-        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime(), recado: document.getElementById('proximaSemanaRecado')?.value?.trim() || '' }, { merge: true });
+        // Semana do cardapio novo e virada automatica no sabado 00:00 antes dela (db.js)
+        const nextMonday = global.getNextMenuMonday(st.currentMenuData);
+        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, nextWeekMonday: nextMonday.getTime(), targetRotationDate: global.getRotationTime(nextMonday), recado: document.getElementById('proximaSemanaRecado')?.value?.trim() || '' }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
         // Avisa todos os funcionarios (push pelo Cloudflare Worker)
@@ -481,7 +478,7 @@
         const btn = document.getElementById('deleteNextWeekBtn');
         btn.disabled = true; btn.textContent = "A apagar...";
         try {
-          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null, recado: '' });
+          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], nextWeekMonday: null, targetRotationDate: null, recado: '' });
           const snap = await fb.getDocs(fb.collection(global.db, "pedidosDaSemana"));
           const batch = fb.writeBatch(global.db);
           snap.forEach(d => { if (d.data().isNextWeek === true) batch.delete(d.ref); });

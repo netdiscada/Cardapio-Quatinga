@@ -195,6 +195,8 @@
             .no-print { display: none !important; }
         }
     </style>
+    <!-- Console da aba Dev: carregado antes de tudo para registrar também os erros de inicialização -->
+    <script src="js/devConsole.js?v=2026.15"></script>
     <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
     <script src="vendor/firebase-app-compat.js"></script>
     <script src="vendor/firebase-firestore-compat.js"></script>
@@ -355,43 +357,52 @@
                 }
 
                 /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
-                /* Wizard dentro do viewer: cartão claro flutuando no rodapé escuro */
+                /* Wizard dentro do viewer: cartão ESCURO com texto claro, igual no modo claro e
+                   no escuro (antes o modo escuro deixava o nome das opções branco no fundo branco) */
                 #menu-viewer-buttons > #order-wizard-container {
-                    background: #ffffff !important;
-                    border: none !important;
+                    background: #1f1f23 !important;
+                    border: 1px solid #2e2e33 !important;
                     border-radius: 1rem 1rem 0 0;
                     box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
                     margin-bottom: 0 !important;
-                    max-height: 45vh;
+                    max-height: 42vh;
                     overflow-y: auto;
+                    padding: 0.75rem !important;
+                }
+                #menu-viewer-buttons #wizard-day-title {
+                    color: #93c5fd !important;
+                    margin-bottom: 0.5rem !important;
                 }
                 /* Botões do wizard grandes e fáceis de tocar (idosos) */
                 #menu-viewer-buttons .wizard-btn {
                     min-height: 56px;
                     font-size: 1rem;
+                    background: #2a2a30 !important;
+                    border: 2px solid #3f3f46 !important;
+                    box-shadow: none !important;
                 }
-                /* CORREÇÃO: contraste dos botões dentro do viewer (fundo escuro) */
-                #menu-viewer-buttons .wizard-btn {
-                    background: #ffffff !important;
-                    color: #111827 !important;
-                    border: 1px solid #e5e7eb !important;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+                #menu-viewer-buttons .wizard-btn:hover,
+                #menu-viewer-buttons .wizard-btn:active {
+                    border-color: #60a5fa !important;
+                    background: #30303a !important;
                 }
-                #menu-viewer-buttons .wizard-btn:hover {
-                    border-color: #2563eb !important;
-                    background: #f9fafb !important;
+                #menu-viewer-buttons .wizard-btn p:first-child {
+                    color: #ffffff !important;
                 }
-                #menu-viewer-buttons .wizard-btn .text-gray-800,
-                #menu-viewer-buttons .wizard-btn .dark\\:text-slate-200 {
-                    color: #111827 !important;
+                #menu-viewer-buttons .wizard-btn p + p {
+                    color: #c4c4cc !important;
                 }
-                #menu-viewer-buttons .wizard-btn .text-gray-500,
-                #menu-viewer-buttons .wizard-btn .dark\\:text-slate-400 {
-                    color: #6b7280 !important;
+                #menu-viewer-buttons #wizard-notes {
+                    background: #2a2a30 !important;
+                    border-color: #3f3f46 !important;
+                    color: #ffffff !important;
+                }
+                #menu-viewer-buttons #wizard-notes::placeholder {
+                    color: #a1a1aa !important;
                 }
                 /* Barra de progresso do wizard visível no fundo escuro */
-                #menu-viewer-buttons #wizard-progress span {
-                    box-shadow: 0 0 4px rgba(255,255,255,0.3);
+                #menu-viewer-buttons #wizard-progress .bg-gray-300 {
+                    background: #52525b !important;
                 }
                 /* Container do submit (revisar pedido) também entra no rodapé */
                 #menu-viewer-buttons > #submitButtonContainer {
@@ -412,36 +423,6 @@
                 html.dark #menu-viewer-img {
                     background: #000000 !important;
                 }
-                /* O wizard dentro do viewer fica como card branco flutuante (intencional),
-                   mas garante que não haja vazamento de branco fora dele */
-                html.dark #menu-viewer-buttons > #order-wizard-container {
-                    background: #ffffff !important;
-                    border: none !important;
-                    border-radius: 1rem 1rem 0 0 !important;
-                    box-shadow: 0 -4px 20px rgba(0,0,0,0.6) !important;
-                    margin-bottom: 0 !important;
-                    max-height: 45vh !important;
-                    overflow-y: auto !important;
-                }
-                /* Texto dos botões do wizard no modo escuro: preto para ler no fundo branco do card */
-                html.dark #menu-viewer-buttons .wizard-btn {
-                    background: #ffffff !important;
-                    color: #111827 !important;
-                    border: 1px solid #e5e7eb !important;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
-                }
-                html.dark #menu-viewer-buttons .wizard-btn:hover {
-                    border-color: #2563eb !important;
-                    background: #f9fafb !important;
-                }
-                html.dark #menu-viewer-buttons .wizard-btn .text-gray-800,
-                html.dark #menu-viewer-buttons .wizard-btn .dark\\:text-slate-200 {
-                    color: #111827 !important;
-                }
-                html.dark #menu-viewer-buttons .wizard-btn .text-gray-500,
-                html.dark #menu-viewer-buttons .wizard-btn .dark\\:text-slate-400 {
-                    color: #6b7280 !important;
-                }
                 /* Botões de controle do viewer (zoom +/- / fechar) no modo escuro */
                 html.dark #viewer-zoom-in,
                 html.dark #viewer-zoom-out,
@@ -458,7 +439,7 @@
                     background: rgba(255,255,255,0.25) !important;
                 }
             </style>
-<script src="js/menu-viewer.js"></script>
+<script src="js/menu-viewer.js?v=2026.15"></script>
 </head>
 <body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -505,7 +486,7 @@
                     <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
                     <div class="grid sm:grid-cols-2 gap-3">
                         <div>
-                            <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
+                            <input type="text" id="employeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
                         </div>
                         <div>
                             <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
@@ -632,7 +613,7 @@
                     <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🤑 Minhas Finanças</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Área privada. Só você acessa com seu RGF e sua senha.</p>
                     <form id="fin-identificar-form" class="flex flex-wrap gap-2 mb-2">
-                        <input type="text" id="fin-rgf-input" inputmode="numeric" placeholder="Digite seu RGF (ex: 22823)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
+                        <input type="text" id="fin-rgf-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Digite seu RGF (ex: 22823)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
                         <button type="submit" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Continuar</button>
                     </form>
                     <form id="fin-login-form" class="space-y-3">
@@ -923,7 +904,7 @@
                 <form id="add-employee-form" class="hidden grid sm:grid-cols-3 gap-4 items-end mb-6">
                     <div>
                         <label for="newEmployeeRGF" class="block text-sm font-bold text-gray-700 dark:text-gray-300">RGF</label>
-                        <input type="text" id="newEmployeeRGF" placeholder="RGF do funcionário" class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg transition-colors font-medium" required>
+                        <input type="text" id="newEmployeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="RGF do funcionário" class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg transition-colors font-medium" required>
                     </div>
                     <div>
                         <label for="newEmployeeName" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Nome Completo</label>
@@ -1001,9 +982,13 @@
                     </button>
                 </div>
 
-                <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 font-mono text-xs overflow-auto" style="max-height: 500px;">
+                <div class="flex items-center justify-between mb-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span id="dev-log-count">0 registros</span>
+                    <label class="flex items-center gap-2 cursor-pointer"><input id="dev-log-only-errors" type="checkbox"> Só erros e avisos</label>
+                </div>
+                <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 font-mono text-xs overflow-auto" style="max-height: 500px; overflow-wrap: anywhere;">
                     <div id="dev-log-console" class="whitespace-pre-wrap text-green-300 dark:text-green-400">
-                        <span class="text-gray-500">[Sistema] Console de desenvolvedor iniciado. Logs aparecerão aqui.</span>
+                        <span class="text-gray-500">Nenhum registro ainda.</span>
                     </div>
                 </div>
             </section>
@@ -1297,12 +1282,12 @@
     <!-- ===== Modulos do app v2 (JS classico, sem imports ES) ===== -->
     <script src="js/config.js?v=2026.11"></script>
     <script src="js/firebase.js?v=2026.1"></script>
-    <script src="js/db.js?v=2026.11"></script>
+    <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
     <script src="js/ui.js?v=2026.11"></script>
     <script src="js/order.js?v=2026.13"></script>
-    <script src="js/userhelp.js?v=2026.10"></script>
-    <script src="js/admin.js?v=2026.13"></script>
+    <script src="js/userhelp.js?v=2026.15"></script>
+    <script src="js/admin.js?v=2026.15"></script>
     <script src="js/financas.js?v=2026.11"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.14"></script>
@@ -1310,8 +1295,8 @@
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
-    <script src="js/app.js?v=2026.13"></script>
-<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
+    <script src="js/app.js?v=2026.15"></script>
+<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:#000;">
             <!-- Topo: fecha + controles de zoom -->
             <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
                 <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
@@ -1343,29 +1328,10 @@
                 });
                 return Promise.all(antigos.map(function(registration) { return registration.unregister(); }));
             }).catch(function() {}).then(function() {
-                return navigator.serviceWorker.register('./sw-v2.js?v=3');
+                return navigator.serviceWorker.register('./sw-v2.js?v=4');
             }).catch(function() {});
         }
 
-    // ===== Dev Panel: Limpar Cache SW (força atualização completa) =====
-    const devClearCacheBtn = document.getElementById('dev-clear-cache');
-    if (devClearCacheBtn) {
-        devClearCacheBtn.addEventListener('click', async () => {
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (const registration of registrations) {
-                    await registration.unregister();
-                }
-            }
-            if (caches) {
-                const cacheNames = await caches.keys();
-                for (const name of cacheNames) {
-                    await caches.delete(name);
-                }
-            }
-            window.location.reload();
-        });
-    }
     </script>
 </body>
 </html>

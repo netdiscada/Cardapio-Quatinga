@@ -820,7 +820,8 @@
       const parts = f.data.split('/');
       const fDia = parseInt(parts[0], 10);
       const fMes = parseInt(parts[1], 10);
-      const fAno = parts.length > 2 && parts[2] ? parseInt(parts[2], 10) : y;
+      // Datas sem ano na tabela são de 2026 (não valem para outros anos)
+      const fAno = parts.length > 2 && parts[2] ? parseInt(parts[2], 10) : 2026;
 
       if (fDia === d && fMes === m && fAno === y) {
         return {

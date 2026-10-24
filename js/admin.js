@@ -422,14 +422,10 @@
   }
 
   // ===== NOVO v3: Calendário interativo de feriados =====
-  // Mapeia o dia da próxima semana para o calendário: a próxima semana começa
-  // na próxima segunda-feira; a linha do calendário mostra dom->sáb dessa semana.
+  // Mostra a semana do PRÓXIMO cardápio (db.js getNextMenuMonday): no fim de semana a
+  // semana atual já é a que começa na segunda seguinte, então o calendário pula para a outra.
   function getNextWeekDates() {
-    const now = new Date();
-    let daysUntilMonday = (1 + 7 - now.getDay()) % 7;
-    if (daysUntilMonday === 0) daysUntilMonday = 7;
-    const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
-    nextMonday.setHours(0, 0, 0, 0);
+    const nextMonday = global.getNextMenuMonday(S().currentMenuData);
     // Domingo anterior à segunda (início da grade dom->sáb)
     const gridStart = new Date(nextMonday);
     gridStart.setDate(gridStart.getDate() - 1);
@@ -503,7 +499,10 @@
       const dates = getNextWeekDates(); // [dom, seg, ter, qua, qui, sex, sab]
       const dayIds = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
 
-      // Só pré-seleciona se ainda não houver feriados definidos (não sobrescreve seleção manual)
+      // Só pré-seleciona se ainda não houver feriados definidos e o ADM não tiver mexido
+      // nesta semana (senão um feriado desmarcado de propósito voltava sozinho)
+      const weekKey = dates[1].toDateString();
+      if (st.holidaysEditedWeek === weekKey) return;
       if (!st.currentMenuData.nextHolidays || st.currentMenuData.nextHolidays.length === 0) {
         const autoHolidays = [];
         // dates.slice(1, 6) = seg, ter, qua, qui, sex da próxima semana
@@ -538,6 +537,7 @@
 
       const dayId = dayEl.dataset.dayId;
       const st = S();
+      st.holidaysEditedWeek = getNextWeekDates()[1].toDateString(); // escolha manual: nao re-preseleciona
       if (!Array.isArray(st.currentMenuData.nextHolidays)) st.currentMenuData.nextHolidays = [];
       const holidays = st.currentMenuData.nextHolidays;
       const index = holidays.indexOf(dayId);
@@ -563,6 +563,7 @@
     if (selectWeekdaysBtn) {
       selectWeekdaysBtn.addEventListener('click', () => {
         const st = S();
+        st.holidaysEditedWeek = getNextWeekDates()[1].toDateString(); // escolha manual: nao re-preseleciona
         const weekdays = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
         st.currentMenuData.nextHolidays = weekdays;
         renderHolidayCalendar();
@@ -577,6 +578,7 @@
     if (clearHolidaysBtn) {
       clearHolidaysBtn.addEventListener('click', () => {
         const st = S();
+        st.holidaysEditedWeek = getNextWeekDates()[1].toDateString(); // escolha manual: nao re-preseleciona
         st.currentMenuData.nextHolidays = [];
         renderHolidayCalendar();
         try {
@@ -790,6 +792,11 @@
   global.handleDeleteOrder = handleDeleteOrder;
   global.openPublicReportModal = openPublicReportModal;
   global.generateAndShareReport = generateAndShareReport;
+  // Usado pelo botão "Testar PDF Share" da aba Dev
+  global.sharePdfBlob = function (pdfBlob, fileName) {
+    const native = global.Capacitor && global.Capacitor.isNativePlatform && global.Capacitor.isNativePlatform();
+    return native ? downloadAndShareViaCapacitor(pdfBlob, fileName) : downloadAndOpenPdf(pdfBlob, fileName);
+  };
   global.handleWhatsAppNotification = handleWhatsAppNotification;
   global.renderHolidayCalendar = renderHolidayCalendar;
   global.bindHolidayCalendarHandlers = bindHolidayCalendarHandlers;

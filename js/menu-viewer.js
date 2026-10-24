@@ -14,13 +14,11 @@ const MENU_VIEWER = {
     scale: 1,
     minScale: 1,
     maxScale: 5,
-    lastScale: 1,
     posX: 0,
     posY: 0,
     isOpen: false,
     // Ponteiros ativos (para pinch)
-    pointers: new Map(),
-    lastPinchDist: 0
+    pointers: new Map()
 };
 
 /* ====== ABRIR / FECHAR ====== */
@@ -34,7 +32,7 @@ function menuViewerOpen() {
     MENU_VIEWER.scale = 1;
     MENU_VIEWER.posX = 0;
     MENU_VIEWER.posY = 0;
-    MENU_VIEWER.lastScale = 1;
+    MENU_VIEWER.pointers.clear();
     menuViewerApplyTransform();
     modal.classList.remove('hidden');
     MENU_VIEWER.isOpen = true;
@@ -83,21 +81,13 @@ function menuViewerApplyTransform() {
     const stage = document.getElementById('menu-viewer-stage');
     if (!img || !stage) return;
 
-    const imgRect = img.getBoundingClientRect();
-    const stageRect = stage.getBoundingClientRect();
-
-    // A imagem escalada ocupa: naturalWidth * scale, naturalHeight * scale
-    // O container é stageRect
-    // O centro da imagem está em: stageRect.center + translate
-    // Para não deixar espaço vazio nas bordas, limitamos o translate
-
-    const scaledW = img.naturalWidth * MENU_VIEWER.scale;
-    const scaledH = img.naturalHeight * MENU_VIEWER.scale;
-
-    // Se a imagem cabe no container, centraliza (posX/posY = 0)
-    // Se não cabe, pode mover até a borda da imagem coincidir com a borda do container
-    const maxX = Math.max(0, (scaledW - stageRect.width) / 2);
-    const maxY = Math.max(0, (scaledH - stageRect.height) / 2);
+    // Limites do arrasto pelo tamanho EXIBIDO da imagem (offsetWidth/Height, já encaixada
+    // na tela), não pelo tamanho original do arquivo: senão dava pra arrastar a imagem
+    // pra fora da tela
+    const scaledW = img.offsetWidth * MENU_VIEWER.scale;
+    const scaledH = img.offsetHeight * MENU_VIEWER.scale;
+    const maxX = Math.max(0, (scaledW - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (scaledH - stage.clientHeight) / 2);
 
     MENU_VIEWER.posX = Math.max(-maxX, Math.min(maxX, MENU_VIEWER.posX));
     MENU_VIEWER.posY = Math.max(-maxY, Math.min(maxY, MENU_VIEWER.posY));
@@ -105,12 +95,29 @@ function menuViewerApplyTransform() {
     img.style.transform = `translate(${MENU_VIEWER.posX}px, ${MENU_VIEWER.posY}px) scale(${MENU_VIEWER.scale})`;
 }
 
-function menuViewerZoomBy(delta) {
-    MENU_VIEWER.lastScale = MENU_VIEWER.scale;
-    MENU_VIEWER.scale = Math.min(MENU_VIEWER.maxScale, Math.max(MENU_VIEWER.minScale, MENU_VIEWER.scale + delta));
-    // Ao dar zoom-out total, recentraliza
-    if (MENU_VIEWER.scale === 1) { MENU_VIEWER.posX = 0; MENU_VIEWER.posY = 0; }
+/* Muda o zoom mantendo parado o ponto (focoX, focoY), em coordenadas da tela */
+function menuViewerSetScale(newScale, focusX, focusY) {
+    const stage = document.getElementById('menu-viewer-stage');
+    const old = MENU_VIEWER.scale;
+    newScale = Math.min(MENU_VIEWER.maxScale, Math.max(MENU_VIEWER.minScale, newScale));
+    if (stage && focusX != null) {
+        const r = stage.getBoundingClientRect();
+        // posição do foco relativa ao centro do palco
+        const fx = focusX - (r.left + r.width / 2);
+        const fy = focusY - (r.top + r.height / 2);
+        MENU_VIEWER.posX = fx - (fx - MENU_VIEWER.posX) * (newScale / old);
+        MENU_VIEWER.posY = fy - (fy - MENU_VIEWER.posY) * (newScale / old);
+    } else {
+        MENU_VIEWER.posX *= newScale / old;
+        MENU_VIEWER.posY *= newScale / old;
+    }
+    MENU_VIEWER.scale = newScale;
+    if (newScale === 1) { MENU_VIEWER.posX = 0; MENU_VIEWER.posY = 0; }
     menuViewerApplyTransform();
+}
+
+function menuViewerZoomBy(delta, focusX, focusY) {
+    menuViewerSetScale(MENU_VIEWER.scale + delta, focusX, focusY);
 }
 
 function menuViewerReset() {
@@ -126,17 +133,30 @@ function menuViewerBindEvents() {
     const img = document.getElementById('menu-viewer-img');
     if (!stage || !img) return;
 
-    let panStart = null; // {x, y, posX, posY} do início do arrasto
+    let panStart = null;     // {x, y, posX, posY} do início do arrasto
+    let pinchStart = null;   // {dist, scale, midX, midY, posX, posY} do início da pinça
+    let gesture = { multi: false, moved: false, startX: 0, startY: 0 };
+    let lastTap = { time: 0, x: 0, y: 0 };
+
+    function startPan(p) {
+        panStart = { x: p.x, y: p.y, posX: MENU_VIEWER.posX, posY: MENU_VIEWER.posY };
+    }
 
     stage.addEventListener('pointerdown', (e) => {
         stage.setPointerCapture(e.pointerId);
         MENU_VIEWER.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (MENU_VIEWER.pointers.size === 1) {
-            panStart = { x: e.clientX, y: e.clientY, posX: MENU_VIEWER.posX, posY: MENU_VIEWER.posY };
+            gesture = { multi: false, moved: false, startX: e.clientX, startY: e.clientY };
+            startPan({ x: e.clientX, y: e.clientY });
         } else if (MENU_VIEWER.pointers.size === 2) {
-            const pts = [...MENU_VIEWER.pointers.values()];
-            MENU_VIEWER.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-            MENU_VIEWER.lastScale = MENU_VIEWER.scale;
+            gesture.multi = true;
+            const [a, b] = [...MENU_VIEWER.pointers.values()];
+            pinchStart = {
+                dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+                scale: MENU_VIEWER.scale,
+                midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2,
+                posX: MENU_VIEWER.posX, posY: MENU_VIEWER.posY
+            };
             panStart = null;
         }
     });
@@ -144,54 +164,64 @@ function menuViewerBindEvents() {
     stage.addEventListener('pointermove', (e) => {
         if (!MENU_VIEWER.pointers.has(e.pointerId)) return;
         MENU_VIEWER.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY) > 10) gesture.moved = true;
 
-        if (MENU_VIEWER.pointers.size === 1 && panStart && MENU_VIEWER.scale > 1) {
-            // PAN com 1 dedo (só quando ampliado)
-            const dx = e.clientX - panStart.x;
-            const dy = e.clientY - panStart.y;
-            MENU_VIEWER.posX = panStart.posX + dx;
-            MENU_VIEWER.posY = panStart.posY + dy;
+        if (MENU_VIEWER.pointers.size === 2 && pinchStart) {
+            // PINÇA: zoom em volta do ponto entre os dedos + arrasto junto
+            const [a, b] = [...MENU_VIEWER.pointers.values()];
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+            const newScale = Math.min(MENU_VIEWER.maxScale, Math.max(MENU_VIEWER.minScale, pinchStart.scale * dist / pinchStart.dist));
+            const r = stage.getBoundingClientRect();
+            const fx = pinchStart.midX - (r.left + r.width / 2);
+            const fy = pinchStart.midY - (r.top + r.height / 2);
+            const k = newScale / pinchStart.scale;
+            MENU_VIEWER.scale = newScale;
+            MENU_VIEWER.posX = fx - (fx - pinchStart.posX) * k + (midX - pinchStart.midX);
+            MENU_VIEWER.posY = fy - (fy - pinchStart.posY) * k + (midY - pinchStart.midY);
+            if (newScale === 1) { MENU_VIEWER.posX = 0; MENU_VIEWER.posY = 0; }
             menuViewerApplyTransform();
-        } else if (MENU_VIEWER.pointers.size === 2) {
-            // PINCH com 2 dedos
-            const pts = [...MENU_VIEWER.pointers.values()];
-            const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-            if (MENU_VIEWER.lastPinchDist > 0) {
-                const factor = dist / MENU_VIEWER.lastPinchDist;
-                MENU_VIEWER.scale = Math.min(MENU_VIEWER.maxScale, Math.max(MENU_VIEWER.minScale, MENU_VIEWER.lastScale * factor));
-                if (MENU_VIEWER.scale === 1) { MENU_VIEWER.posX = 0; MENU_VIEWER.posY = 0; }
-                menuViewerApplyTransform();
-            }
+        } else if (MENU_VIEWER.pointers.size === 1 && panStart && MENU_VIEWER.scale > 1) {
+            // ARRASTO com 1 dedo (só quando ampliado)
+            MENU_VIEWER.posX = panStart.posX + (e.clientX - panStart.x);
+            MENU_VIEWER.posY = panStart.posY + (e.clientY - panStart.y);
+            menuViewerApplyTransform();
         }
     });
 
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
-        stage.addEventListener(ev, (e) => {
-            MENU_VIEWER.pointers.delete(e.pointerId);
-            if (MENU_VIEWER.pointers.size === 0) panStart = null;
-            if (MENU_VIEWER.pointers.size < 2) MENU_VIEWER.lastPinchDist = 0;
-            // NÃO reinicia panStart aqui - evita zoom/pann jump ao levantar dedos
-            if (MENU_VIEWER.pointers.size === 1) {
-                MENU_VIEWER.lastScale = MENU_VIEWER.scale;
-            }
-        })
-    );
-
-    // Duplo toque = zoom in/out rápido
-    let lastTap = 0;
-    stage.addEventListener('touchend', (e) => {
-        const now = Date.now();
-        if (now - lastTap < 300 && MENU_VIEWER.pointers.size === 0) {
-            if (MENU_VIEWER.scale > 1) menuViewerReset();
-            else menuViewerZoomBy(1.5);
+    function endPointer(e) {
+        if (!MENU_VIEWER.pointers.has(e.pointerId)) return;
+        MENU_VIEWER.pointers.delete(e.pointerId);
+        if (MENU_VIEWER.pointers.size === 1) {
+            // Saiu um dedo da pinça: o zoom FICA como está; o dedo que sobrou continua arrastando
+            pinchStart = null;
+            startPan([...MENU_VIEWER.pointers.values()][0]);
+            return;
         }
-        lastTap = now;
-    });
+        if (MENU_VIEWER.pointers.size > 0) return;
+        panStart = null;
+        pinchStart = null;
+
+        // Toque duplo (só toque simples, sem pinça nem arrasto) = amplia/volta
+        if (e.type === 'pointerup' && !gesture.multi && !gesture.moved) {
+            const now = Date.now();
+            if (now - lastTap.time < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+                if (MENU_VIEWER.scale > 1) menuViewerReset();
+                else menuViewerSetScale(2.5, e.clientX, e.clientY);
+                lastTap = { time: 0, x: 0, y: 0 };
+            } else {
+                lastTap = { time: now, x: e.clientX, y: e.clientY };
+            }
+        } else {
+            lastTap = { time: 0, x: 0, y: 0 };
+        }
+    }
+    ['pointerup', 'pointercancel'].forEach(ev => stage.addEventListener(ev, endPointer));
 
     // Roda do mouse (desktop)
     stage.addEventListener('wheel', (e) => {
         e.preventDefault();
-        menuViewerZoomBy(e.deltaY < 0 ? 0.2 : -0.2);
+        menuViewerZoomBy(e.deltaY < 0 ? 0.2 : -0.2, e.clientX, e.clientY);
     }, { passive: false });
 
     // Botões de controle
