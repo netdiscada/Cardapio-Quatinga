@@ -9,6 +9,7 @@
   const weekDays = global.weekDays;
   const mealOptions = global.mealOptions;
   const getDayId = global.getDayId;
+  const esc = global.escapeHtml;
   // Estado compartilhado (definido em app.js)
   const S = function () { return global.__state; };
 
@@ -17,8 +18,11 @@
     const toast = document.getElementById('app-toast');
     if (!toast) return;
     toast.textContent = message;
+    // Remove o tipo do toast anterior (senao 'error' + 'success' ficam juntos)
+    toast.classList.remove('success', 'error', 'info');
     toast.classList.add('show', type);
-    setTimeout(() => toast.classList.remove('show'), duration);
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => toast.classList.remove('show'), duration);
   }
 
   // ===== Modal generico de confirmacao =====
@@ -178,7 +182,7 @@
     tableHTML += `<th class="py-2 px-3 border-b dark:border-slate-600 text-left text-gray-700 dark:text-slate-300 font-bold">Ações</th></tr></thead><tbody>`;
     filteredOrders.forEach(doc => {
       const order = doc.data();
-      tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-slate-600 font-bold text-gray-800 dark:text-slate-200">${order.employeeName}</td><td class="py-2 px-3 border-b dark:border-slate-600 font-medium text-gray-600 dark:text-slate-400">${order.employeeRGF || 'N/A'}</td>`;
+      tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-slate-600 font-bold text-gray-800 dark:text-slate-200">${esc(order.employeeName)}</td><td class="py-2 px-3 border-b dark:border-slate-600 font-medium text-gray-600 dark:text-slate-400">${esc(order.employeeRGF || 'N/A')}</td>`;
       weekDays.forEach(day => {
         const dayId = getDayId(day);
         let choice = order[dayId] || 'N/A';
@@ -186,12 +190,12 @@
         if (choice === 'FERIADO') {
           tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 bg-gray-100 dark:bg-slate-800/50 text-gray-400 dark:text-slate-500 text-xs font-bold text-center">FERIADO</td>`;
         } else {
-          let cellContent = choice;
-          if (notes) cellContent += ` <span title="${notes}" class="cursor-help text-orange-500 font-bold">*</span>`;
+          let cellContent = esc(choice);
+          if (notes) cellContent += ` <span title="${esc(notes)}" class="cursor-help text-orange-500 font-bold">*</span>`;
           tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 font-medium text-gray-700 dark:text-slate-300">${cellContent}</td>`;
         }
       });
-      tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 space-x-2 whitespace-nowrap"><button data-id="${doc.id}" class="edit-order-btn text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 text-sm font-bold transition-colors">Editar</button><button data-id="${doc.id}" data-name="${order.employeeName}" class="delete-order-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
+      tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 space-x-2 whitespace-nowrap"><button data-id="${doc.id}" class="edit-order-btn text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 text-sm font-bold transition-colors">Editar</button><button data-id="${doc.id}" data-name="${esc(order.employeeName)}" class="delete-order-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
     });
     tableHTML += `</tbody></table>`;
     container.innerHTML = tableHTML;
@@ -207,7 +211,7 @@
       const orderedRGFs = new Set(orders.map(orderDoc => orderDoc.data().employeeRGF));
       const haveOrdered = allEmployees.filter(emp => orderedRGFs.has(emp.id));
       const haveNotOrdered = allEmployees.filter(emp => !orderedRGFs.has(emp.id));
-      let html = `<div><h3 class="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">✅ Já Pediram (${haveOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveOrdered.map(e => `<li class="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-md border border-emerald-100 dark:border-emerald-800/30">${e.nome}</li>`).join('') || '<li class="text-gray-500 font-medium">Ninguém fez pedido ainda.</li>'}</ul></div><div><h3 class="font-bold text-lg text-red-600 dark:text-red-400 mb-2">❌ Ainda Não Pediram (${haveNotOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveNotOrdered.map(e => `<li class="p-2 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-md border border-red-100 dark:border-red-800/30">${e.nome}</li>`).join('') || '<li class="text-gray-500 font-medium">Todos os funcionários fizeram pedido!</li>'}</ul></div>`;
+      let html = `<div><h3 class="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">✅ Já Pediram (${haveOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveOrdered.map(e => `<li class="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-md border border-emerald-100 dark:border-emerald-800/30">${esc(e.nome)}</li>`).join('') || '<li class="text-gray-500 font-medium">Ninguém fez pedido ainda.</li>'}</ul></div><div><h3 class="font-bold text-lg text-red-600 dark:text-red-400 mb-2">❌ Ainda Não Pediram (${haveNotOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveNotOrdered.map(e => `<li class="p-2 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-md border border-red-100 dark:border-red-800/30">${esc(e.nome)}</li>`).join('') || '<li class="text-gray-500 font-medium">Todos os funcionários fizeram pedido!</li>'}</ul></div>`;
       container.innerHTML = html;
     } catch (error) { container.innerHTML = '<p class="text-red-500 font-bold">Falha ao carregar status.</p>'; }
   }
@@ -229,7 +233,7 @@
       const currentChoice = order[dayId] || '';
       const currentNotes = order[`${dayId}_notes`] || '';
       let selectHTML = `<select id="edit-choice-${dayId}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg mb-2 text-sm bg-white dark:bg-slate-800 dark:text-slate-100 font-medium"><option value="">(Nenhuma opção selecionada)</option>${mealOptions.map(opt => `<option value="${opt.name}" ${currentChoice === opt.name ? 'selected' : ''}>${opt.name}</option>`).join('')}</select>`;
-      optionsContainer.innerHTML += `<div class="p-3 border rounded-lg bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700"><label class="block font-bold text-gray-700 dark:text-slate-300 mb-2">${day}</label>${selectHTML}<input type="text" id="edit-notes-${dayId}" value="${currentNotes}" placeholder="Anotações (ex: sem cebola)" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-slate-100 font-medium"></div>`;
+      optionsContainer.innerHTML += `<div class="p-3 border rounded-lg bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700"><label class="block font-bold text-gray-700 dark:text-slate-300 mb-2">${day}</label>${selectHTML}<input type="text" id="edit-notes-${dayId}" value="${esc(currentNotes)}" placeholder="Anotações (ex: sem cebola)" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-slate-100 font-medium"></div>`;
     });
     document.getElementById('edit-order-modal').classList.remove('hidden');
   }

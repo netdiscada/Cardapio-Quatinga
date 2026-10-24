@@ -8,6 +8,7 @@
   const auth = global.auth;
   const weekDays = global.weekDays;
   const getDayId = global.getDayId;
+  const esc = global.escapeHtml;
   const S = function () { return global.__state; };
 
   // ===== Busca funcionario por RGF (com autofill do nome) =====
@@ -43,8 +44,8 @@
       const choice = orderData[dayId];
       const notes = orderData[`${dayId}_notes`];
       if (choice) {
-        let displayChoice = choice === 'FERIADO' ? '🏖️ FERIADO (Sem Pedido)' : `🍽️ ${choice}`;
-        let notesHtml = notes ? `<span class="text-sm text-gray-500 italic block sm:inline mt-1 sm:mt-0 sm:ml-2">(${notes})</span>` : '';
+        let displayChoice = choice === 'FERIADO' ? '🏖️ FERIADO (Sem Pedido)' : `🍽️ ${esc(choice)}`;
+        let notesHtml = notes ? `<span class="text-sm text-gray-500 italic block sm:inline mt-1 sm:mt-0 sm:ml-2">(${esc(notes)})</span>` : '';
         let styleClass = choice === 'FERIADO' ? 'bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-zinc-700' : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800/50';
         detailsContainer.innerHTML += `<div class="p-4 rounded-xl border ${styleClass} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 transition-all hover:shadow-md"><span class="font-bold w-full sm:w-1/3">${day}</span><div class="w-full sm:w-2/3 text-left sm:text-right font-medium">${displayChoice} ${notesHtml}</div></div>`;
       }
@@ -177,7 +178,7 @@
       if (item.notes) st.tempOrderData[`${dayId}_notes`] = item.notes;
       const displayChoice = item.choice === 'FERIADO' ? '🏖️ FERIADO (Sem Pedido)' : item.choice;
       const styleClass = item.choice === 'FERIADO' ? 'text-gray-400 italic' : 'text-gray-800 dark:text-gray-200';
-      summaryContainer.innerHTML += `<p class="${styleClass}"><span class="font-bold">${item.day}:</span> ${displayChoice} ${item.notes ? `<span class="text-sm text-gray-500 italic">(${item.notes})</span>` : ''}</p>`;
+      summaryContainer.innerHTML += `<p class="${styleClass}"><span class="font-bold">${item.day}:</span> ${esc(displayChoice)} ${item.notes ? `<span class="text-sm text-gray-500 italic">(${esc(item.notes)})</span>` : ''}</p>`;
     });
     document.getElementById('confirmation-modal').classList.remove('hidden');
   }

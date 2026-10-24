@@ -10,6 +10,7 @@
   const weekDays = global.weekDays;
   const mealOptions = global.mealOptions;
   const getDayId = global.getDayId;
+  const esc = global.escapeHtml;
   const db = global.db;
   const S = function () { return global.__state; };
 
@@ -161,7 +162,7 @@
       let tableHTML = `<table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden"><thead><tr class="bg-gray-50 dark:bg-zinc-800/80"><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">RGF</th><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Nome</th><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Ações</th></tr></thead><tbody>`;
       snapshot.forEach(doc => {
         const employee = doc.data();
-        tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${doc.id}</td><td class="py-2 px-3 border-b dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-200">${employee.nome}</td><td class="py-2 px-3 border-b dark:border-zinc-800 space-x-2"><button data-id="${doc.id}" data-name="${employee.nome}" class="edit-employee-btn text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-bold transition-colors">Editar</button><button data-id="${doc.id}" data-name="${employee.nome}" class="delete-employee-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
+        tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${esc(doc.id)}</td><td class="py-2 px-3 border-b dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-200">${esc(employee.nome)}</td><td class="py-2 px-3 border-b dark:border-zinc-800 space-x-2"><button data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="edit-employee-btn text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-bold transition-colors">Editar</button><button data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="delete-employee-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
       });
       tableHTML += '</tbody></table>';
       container.innerHTML = tableHTML;
@@ -268,11 +269,11 @@
           const order = orderDoc.data();
           let choice = (order[dayId] || '').toUpperCase();
           const notes = order[`${dayId}_notes`];
-          let choiceHTML = choice;
+          let choiceHTML = esc(choice);
           if (choice === 'PRATO PRINCIPAL') choiceHTML = 'PRATO';
           if (choice === 'OPÇÃO') choiceHTML = 'OPÇÃO';
-          if (notes) choiceHTML += ` <span style="font-style: italic; font-weight: 400;">(${notes})</span>`;
-          tableHTML += `<tr><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 400;">${order.employeeRGF || 'N/A'}</td><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 600;">${order.employeeName}</td><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 400;">${choiceHTML}</td></tr>`;
+          if (notes) choiceHTML += ` <span style="font-style: italic; font-weight: 400;">(${esc(notes)})</span>`;
+          tableHTML += `<tr><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 400;">${esc(order.employeeRGF || 'N/A')}</td><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 600;">${esc(order.employeeName)}</td><td style="border: 1px solid #999; padding: 5px; text-align: left; font-weight: 400;">${choiceHTML}</td></tr>`;
         });
         tableHTML += '</tbody></table></div>';
         html += tableHTML;
@@ -804,7 +805,7 @@
   // ===== Helpers para PDF =====
   async function downloadAndShareViaCapacitor(pdfBlob, fileName) {
     try {
-      const { Filesystem, Directory, Encoding, Share, AppLauncher } = global.Capacitor.Plugins;
+      const { Filesystem, Directory, Share, AppLauncher } = global.Capacitor.Plugins;
       const base64 = await blobToBase64(pdfBlob);
       
       console.log('[PDF Share] Iniciando compartilhamento:', fileName);
@@ -814,9 +815,8 @@
         console.log('[PDF Share] Estratégia 1: Directory.External');
         await Filesystem.writeFile({
           path: fileName,
-          data: base64,
-          directory: Directory.External,
-          encoding: Encoding.UTF8
+          data: base64, // sem 'encoding': o Filesystem trata 'data' como base64 (binário)
+          directory: Directory.External
         });
         console.log('[PDF Share] Arquivo salvo em External');
         
@@ -845,8 +845,7 @@
         await Filesystem.writeFile({
           path: fileName,
           data: base64,
-          directory: Directory.Documents,
-          encoding: Encoding.UTF8
+          directory: Directory.Documents
         });
         console.log('[PDF Share] Arquivo salvo em Documents');
         

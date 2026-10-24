@@ -29,30 +29,33 @@
 
   // Mostra notificação local (funciona no APK via Capacitor e no PWA)
   function showLocalNotification(title, body, data = {}) {
-    // Tenta notificação nativa do Capacitor (APK)
-    if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.Plugins.PushNotifications) {
-      try {
-        Capacitor.Plugins.PushNotifications.schedule({
-          notifications: [{
-            title,
-            body,
-            id: Date.now(),
-            extra: data,
-            schedule: { at: new Date(Date.now() + 100) }
-          }]
-        });
-        return;
-      } catch (e) { /* fallback */ }
+    // APK: notificacao local vem do plugin LocalNotifications
+    // (PushNotifications nao tem schedule(); a chamada falhava sem mostrar nada)
+    const LocalNotif = window.Capacitor && Capacitor.isNativePlatform && Capacitor.Plugins.LocalNotifications;
+    if (LocalNotif) {
+      LocalNotif.schedule({
+        notifications: [{
+          title,
+          body,
+          id: Date.now() % 2147483647, // id precisa caber em int32 no Android
+          extra: data,
+          schedule: { at: new Date(Date.now() + 100) }
+        }]
+      }).catch(e => console.warn('LocalNotifications falhou:', e));
+      return;
     }
     // Fallback: Notification API do navegador (PWA/Chrome)
     if ('Notification' in window && Notification.permission === 'granted') {
-      const notif = new Notification(title, {
-        body,
-        icon: 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%232563eb%27 rx=%2720%27/%3E%3Ctext x=%2750%27 y=%2765%27 font-size=%2760%27 text-anchor=%27middle%27 fill=%27white%27%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E',
-        badge: 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%232563eb%27 rx=%2720%27/%3E%3Ctext x=%2750%27 y=%2765%27 font-size=%2760%27 text-anchor=%27middle%27 fill=%27white%27%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E',
-        tag: data.tag || 'cardapio-notification',
-        data
-      });
+      const icon = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 fill=%27%232563eb%27 rx=%2720%27/%3E%3Ctext x=%2750%27 y=%2765%27 font-size=%2760%27 text-anchor=%27middle%27 fill=%27white%27%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E';
+      const options = { body, icon, badge: icon, tag: data.tag || 'cardapio-notification', data };
+      // No Chrome Android 'new Notification()' lanca TypeError; la so funciona via Service Worker
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready
+          .then(reg => reg.showNotification(title, options))
+          .catch(e => console.warn('showNotification falhou:', e));
+        return;
+      }
+      const notif = new Notification(title, options);
       notif.onclick = () => { window.focus(); notif.close(); };
     }
   }
@@ -115,8 +118,9 @@
         }
 
         // Verifica "Todos já escolheram" (semana atual)
-        const funcsSnap = await fb.getDocs(fb.query(global.getFuncionariosCollectionRef(), fb.where('ativo', '==', true)));
-        const activeRGFs = funcsSnap.docs.map(d => d.id);
+        const funcsSnap = await fb.getDocs(global.getFuncionariosCollectionRef());
+        // O cadastro de funcionarios nao grava 'ativo'; so exclui quem tiver ativo === false
+        const activeRGFs = funcsSnap.docs.filter(d => d.data().ativo !== false).map(d => d.id);
         const currentWeekOrders = orders.filter(o => !o.isNextWeek).map(o => o.employeeRGF).filter(Boolean);
         const missing = activeRGFs.filter(rgf => !currentWeekOrders.includes(rgf));
 

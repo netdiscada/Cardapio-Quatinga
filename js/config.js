@@ -32,4 +32,12 @@
     return dayName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, "").toLowerCase();
   }
   global.getDayId = getDayId;
+
+  // Escapa texto livre (nome, anotacoes) antes de inserir via innerHTML
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  global.escapeHtml = escapeHtml;
 })(window);

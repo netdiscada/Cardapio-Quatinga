@@ -55,10 +55,8 @@
       const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
       document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
 
-      // Registra o Service Worker real (sw.js) para offline
-      if ('serviceWorker' in navigator && location.protocol === 'https:') {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      }
+      // O Service Worker (sw-v2.js) e registrado pelo script inline no fim do index.html.
+      // Registrar outro (sw.js) aqui fazia os dois se substituirem a cada carregamento.
 
       // Pre-carrega dados principais no cache do Firestore (pra funcionar offline)
       setTimeout(() => {
@@ -332,8 +330,8 @@
 
     const wizardOptions = document.getElementById('wizard-options');
     if (wizardOptions) wizardOptions.addEventListener('click', handleWizardSelection);
-    const openConfirmationModal = document.getElementById('openConfirmationModal');
-    if (openConfirmationModal) openConfirmationModal.addEventListener('click', openConfirmationModal);
+    const openConfirmationModalBtn = document.getElementById('openConfirmationModal');
+    if (openConfirmationModalBtn) openConfirmationModalBtn.addEventListener('click', global.openConfirmationModal);
     const submitOrderBtn = document.getElementById('submitOrder');
     if (submitOrderBtn) submitOrderBtn.addEventListener('click', submitOrder);
 
@@ -499,7 +497,7 @@
       badgeContainer.style.cursor = 'pointer';
       badgeContainer.title = 'Alternar entre semana atual e próxima semana';
       badgeContainer.addEventListener('click', () => {
-        const st = S();
+        const st = global.__state;
         const temProxima = st.currentMenuData && st.currentMenuData.nextMenuImageBase64;
         if (!temProxima && !st.viewingNextWeek) {
           showToast('Não há cardápio da próxima semana disponível.', 'info');

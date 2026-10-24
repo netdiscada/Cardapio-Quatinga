@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v13';
+const CACHE_NAME = 'cardapio-v14';
 
 const CORE_ASSETS = [
   './',
@@ -43,6 +43,9 @@ self.addEventListener('fetch', (event) => {
 
   if (url.includes('firebase') || url.includes('googleapis')) return;
   if (request.method !== 'GET') return;
+  // APIs com dados que mudam (contracheque, releases, push): nunca servir do cache,
+  // senao o cache-first devolve para sempre a primeira resposta.
+  if (url.includes('api.github.com') || url.includes('mogidascruzes.sp.gov.br') || url.includes('workers.dev')) return;
 
   const isAppAsset = CORE_ASSETS.some(asset => url.endsWith(asset.replace('./', ''))) || url.endsWith('/');
 

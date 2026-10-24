@@ -61,8 +61,9 @@
   // Verifica se todos pediram (pode ser chamado pelo admin ou agendado)
   global.checkAndNotifyAllOrdered = async function() {
     try {
-      const funcsSnap = await fb.getDocs(fb.query(global.getFuncionariosCollectionRef(), fb.where('ativo', '==', true)));
-      const activeRGFs = funcsSnap.docs.map(d => d.id);
+      const funcsSnap = await fb.getDocs(global.getFuncionariosCollectionRef());
+      // O cadastro de funcionarios nao grava 'ativo'; so exclui quem tiver ativo === false
+      const activeRGFs = funcsSnap.docs.filter(d => d.data().ativo !== false).map(d => d.id);
 
       const pedidosSnap = await fb.getDocs(fb.query(
         fb.collection(global.db, 'pedidosDaSemana'),

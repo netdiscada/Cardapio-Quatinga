@@ -231,17 +231,16 @@
   async function installApk(apkBlob, fileName) {
     const isNative = global.Capacitor?.isNativePlatform;
     
-    if (isNative && global.Capacitor.Plugins?.FileSystem) {
+    if (isNative && global.Capacitor.Plugins?.Filesystem) {
       try {
         // Salva no armazenamento do app
-        const { Filesystem, Directory, Encoding } = global.Capacitor.Plugins;
+        const { Filesystem, Directory } = global.Capacitor.Plugins;
         const base64 = await blobToBase64(apkBlob);
         
         await Filesystem.writeFile({
           path: fileName,
-          data: base64,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8
+          data: base64, // sem 'encoding' = binário (base64)
+          directory: Directory.Cache
         });
         
         // Pega URI do arquivo
