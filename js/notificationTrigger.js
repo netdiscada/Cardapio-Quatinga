@@ -24,6 +24,9 @@
     return data;
   }
 
+  // Usado pela aba Dev (aviso personalizado e estatisticas)
+  global.callNotifyEndpoint = callNotifyEndpoint;
+
   // ADM lancou cardapio -> todos os funcionarios
   global.triggerNewMenuNotification = async function (isNextWeek) {
     try { await callNotifyEndpoint({ type: 'new_menu', isNextWeek: isNextWeek !== false }); }
