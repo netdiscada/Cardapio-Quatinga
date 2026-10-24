@@ -389,7 +389,7 @@
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
       // No APK nativo, SEMPRE usa Capacitor Share (mais confiável)
-      if (global.Capacitor?.isNativePlatform && global.Capacitor.Plugins?.Share) {
+      if (global.Capacitor?.isNativePlatform?.() && global.Capacitor.Plugins?.Share) {
         downloadAndShareViaCapacitor(pdfBlob, fileName);
       } else {
         // PWA/Web: tenta Web Share API com files
@@ -804,114 +804,54 @@
 
   // ===== Helpers para PDF =====
   async function downloadAndShareViaCapacitor(pdfBlob, fileName) {
-    try {
-      const { Filesystem, Directory, Share, AppLauncher } = global.Capacitor.Plugins;
-      const base64 = await blobToBase64(pdfBlob);
-      
-      console.log('[PDF Share] Iniciando compartilhamento:', fileName);
-      
-      // Estratégia 1: Directory.External (Downloads público) + Share
+    const { Filesystem, Share } = global.Capacitor.Plugins;
+    console.log('[PDF Share] Iniciando compartilhamento:', fileName);
+
+    // Estratégia 1: grava no cache do app (sem permissão de armazenamento) e abre o
+    // compartilhamento nativo. 'CACHE' é o valor de Directory.Cache do @capacitor/filesystem
+    // (o enum Directory não existe em Capacitor.Plugins). Exige APK com o plugin Filesystem.
+    if (Filesystem && Share) {
       try {
-        console.log('[PDF Share] Estratégia 1: Directory.External');
-        await Filesystem.writeFile({
-          path: fileName,
+        const base64 = await blobToBase64(pdfBlob);
+        const { uri } = await Filesystem.writeFile({
+          path: 'Cardapio-Quatinga.pdf',
           data: base64, // sem 'encoding': o Filesystem trata 'data' como base64 (binário)
-          directory: Directory.External
+          directory: 'CACHE'
         });
-        console.log('[PDF Share] Arquivo salvo em External');
-        
-        const fileUri = await Filesystem.getUri({
-          directory: Directory.External,
-          path: fileName
-        });
-        console.log('[PDF Share] URI obtida:', fileUri.uri);
-        
         await Share.share({
           title: 'Cardápio Quatinga',
           text: 'Segue em anexo o relatório de pedidos.',
-          url: fileUri.uri,
+          files: [uri],
           dialogTitle: 'Compartilhar PDF'
         });
-        console.log('[PDF Share] Share OK');
         showToast("Compartilhamento aberto!", "success");
         return;
-      } catch (err1) {
-        console.error('[PDF Share] Estratégia 1 FALHOU:', err1.message, err1);
+      } catch (err) {
+        // Usuário fechou a folha de compartilhamento: não é erro
+        if (/cancel/i.test(err && err.message)) return;
+        console.error('[PDF Share] Filesystem + Share falhou:', err && err.message, err);
       }
-      
-      // Estratégia 2: Directory.Documents + Share
-      try {
-        console.log('[PDF Share] Estratégia 2: Directory.Documents');
-        await Filesystem.writeFile({
-          path: fileName,
-          data: base64,
-          directory: Directory.Documents
-        });
-        console.log('[PDF Share] Arquivo salvo em Documents');
-        
-        const fileUri = await Filesystem.getUri({
-          directory: Directory.Documents,
-          path: fileName
-        });
-        console.log('[PDF Share] URI obtida:', fileUri.uri);
-        
-        await Share.share({
-          title: 'Cardápio Quatinga',
-          text: 'Segue em anexo o relatório de pedidos.',
-          url: fileUri.uri,
-          dialogTitle: 'Compartilhar PDF'
-        });
-        console.log('[PDF Share] Share OK');
-        showToast("Compartilhamento aberto!", "success");
-        return;
-      } catch (err2) {
-        console.error('[PDF Share] Estratégia 2 FALHOU:', err2.message, err2);
-      }
-      
-      // Estratégia 3: AppLauncher com intent ACTION_VIEW
-      try {
-        console.log('[PDF Share] Estratégia 3: AppLauncher');
-        const fileUri = await Filesystem.getUri({
-          directory: Directory.External,
-          path: fileName
-        });
-        console.log('[PDF Share] URI para AppLauncher:', fileUri.uri);
-        
-        await AppLauncher.openUrl({ url: fileUri.uri });
-        console.log('[PDF Share] AppLauncher OK');
-        showToast("Seletor de apps aberto!", "success");
-        return;
-      } catch (err3) {
-        console.error('[PDF Share] Estratégia 3 FALHOU:', err3.message, err3);
-      }
-      
-      // Estratégia 4: Web Share API nativa (blob)
-      try {
-        console.log('[PDF Share] Estratégia 4: Web Share API');
-        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: 'Cardápio Quatinga',
-            text: 'Segue em anexo o relatório de pedidos.',
-            files: [file]
-          });
-          console.log('[PDF Share] Web Share OK');
-          showToast("Compartilhamento aberto!", "success");
-          return;
-        } else {
-          console.log('[PDF Share] Web Share API não suporta files');
-        }
-      } catch (err4) {
-        console.error('[PDF Share] Estratégia 4 FALHOU:', err4.message, err4);
-      }
-      
-      // Último fallback: download direto
-      console.log('[PDF Share] Todas falharam, fallback download direto');
-      downloadAndOpenPdf(pdfBlob, fileName);
-    } catch (e) {
-      console.error('[PDF Share] Erro geral:', e);
-      downloadAndOpenPdf(pdfBlob, fileName);
     }
+
+    // Estratégia 2: Web Share API com arquivo
+    try {
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Cardápio Quatinga',
+          text: 'Segue em anexo o relatório de pedidos.',
+          files: [file]
+        });
+        showToast("Compartilhamento aberto!", "success");
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      console.error('[PDF Share] Web Share falhou:', err && err.message, err);
+    }
+
+    // Último fallback: download direto
+    downloadAndOpenPdf(pdfBlob, fileName);
   }
 
   function downloadAndOpenPdf(pdfBlob, fileName) {

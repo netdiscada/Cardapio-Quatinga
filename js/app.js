@@ -263,35 +263,13 @@
 
   // =====================================================================
   // NOTIFICACOES PUSH (Capacitor). So roda dentro do APK; no PWA ignora.
+  // Permissao, token FCM e associacao ao RGF ficam em pushRegistration.js;
+  // aqui so tratamos as notificacoes recebidas com o app aberto.
   // =====================================================================
-  async function registerDeviceToken() {
-    try {
-      const r = await Capacitor.Plugins.PushNotifications.register();
-      const token = (r && (r.token || (r.value && r.value.token))) || null;
-      if (token) {
-        const rgfEl = document.getElementById('employeeRGF');
-        const rgf = rgfEl && rgfEl.value ? rgfEl.value.trim() : 'sem-rgf';
-        if (global.db) {
-          await global.db.collection('deviceTokens').doc(token).set({
-            token: token,
-            rgf: rgf,
-            platform: 'android',
-            updatedAt: global.serverTimestamp()
-          }, { merge: true });
-        }
-      }
-    } catch (e) { /* sem permissao ainda ou fora do APK */ }
-  }
-
   function setupPushNotifications() {
-    if (!window.Capacitor || !Capacitor.isNativePlatform) return;
+    if (!window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
     const Push = Capacitor.Plugins.PushNotifications;
     if (!Push) return;
-    Push.requestPermissions().then((perm) => {
-      if (perm.receive === 'granted') registerDeviceToken();
-    }).catch(() => {});
-    const rgfEl = document.getElementById('employeeRGF');
-    if (rgfEl) rgfEl.addEventListener('change', registerDeviceToken);
     Push.addListener('pushNotificationReceived', (n) => {
       try { if (n && n.data) showToast(n.title || 'Cardápio Quatinga', 'info', 4000); } catch (e) {}
     });
