@@ -1,7 +1,7 @@
 // Cardapio Quatinga v3 - appUpdate.js
 // Ponte para o atualizador nativo do APK (plugin AppUpdater, em android/ no PC-DO-HERMES).
-// A verificação automática roda no lado nativo sempre que o app abre; aqui só expomos a
-// versão instalada e a verificação manual. No navegador/PWA não há nada a fazer: o site
+// Ao abrir o app, o lado nativo pergunta "Atualizar agora / Mais tarde" se houver versão nova;
+// aqui só expomos a versão instalada e a verificação manual. No navegador/PWA não há nada a fazer: o site
 // já é sempre a versão publicada.
 
 (function (global) {
@@ -19,7 +19,7 @@
     }
   }
 
-  // Verificação manual (ex: botão no menu). Os avisos aparecem como toast nativo.
+  // Verificação manual (ex: botão no menu). Abre o mesmo diálogo de atualização do lado nativo.
   async function check() {
     const plugin = getPlugin();
     if (!plugin) {
