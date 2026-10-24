@@ -38,22 +38,8 @@
   // =====================================================================
   function setupPWA() {
     try {
-      const manifest = {
-        name: "Cardápio Quatinga",
-        short_name: "Cardápio",
-        start_url: window.location.href,
-        display: "standalone",
-        background_color: "#000000",
-        theme_color: "#2563eb",
-        icons: [{
-          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb' rx='20'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white'%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E",
-          sizes: "192x192",
-          type: "image/svg+xml",
-          purpose: "any maskable"
-        }]
-      };
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-      document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+      // O manifest agora e o arquivo manifest.json (com icone PNG): o iPhone so aceita
+      // notificacoes do site instalado na tela inicial, e nao le manifest gerado em blob.
 
       // O Service Worker (sw-v2.js) e registrado pelo script inline no fim do index.html.
       // Registrar outro (sw.js) aqui fazia os dois se substituirem a cada carregamento.
@@ -236,7 +222,7 @@
         await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime(), recado: document.getElementById('proximaSemanaRecado')?.value?.trim() || '' }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
-        // Dispara notificação push real via Vercel endpoint
+        // Avisa todos os funcionarios (push pelo Cloudflare Worker)
         if (global.triggerNewMenuNotification) {
           global.triggerNewMenuNotification(true);
         }
@@ -262,40 +248,126 @@
   }
 
   // =====================================================================
-  // NOTIFICACOES PUSH (Capacitor). So roda dentro do APK; no PWA ignora.
+  // CLIQUE NA NOTIFICACAO (APK e site). O Worker manda data.action:
+  //   order  -> funcionario: abre a tela de pedido da semana certa
+  //   orders -> ADM: abre a aba Pedidos
+  //   pdf    -> ADM: abre a aba Pedidos e ja gera o PDF ("todos concluiram")
   // =====================================================================
-  async function registerDeviceToken() {
-    try {
-      const r = await Capacitor.Plugins.PushNotifications.register();
-      const token = (r && (r.token || (r.value && r.value.token))) || null;
-      if (token) {
-        const rgfEl = document.getElementById('employeeRGF');
-        const rgf = rgfEl && rgfEl.value ? rgfEl.value.trim() : 'sem-rgf';
-        if (global.db) {
-          await global.db.collection('deviceTokens').doc(token).set({
-            token: token,
-            rgf: rgf,
-            platform: 'android',
-            updatedAt: global.serverTimestamp()
-          }, { merge: true });
-        }
-      }
-    } catch (e) { /* sem permissao ainda ou fora do APK */ }
+  function waitFor(check, timeoutMs) {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      (function poll() {
+        if (check()) return resolve(true);
+        if (Date.now() - start > timeoutMs) return resolve(false);
+        setTimeout(poll, 250);
+      })();
+    });
   }
 
+  async function handleNotificationAction(action, isNextWeekRaw) {
+    if (!action) return;
+    const isNextWeek = String(isNextWeekRaw) === 'true';
+    const st = global.__state;
+    // App acabou de abrir pela notificacao: espera login e cardapio carregarem
+    await waitFor(() => !!(auth && auth.currentUser), 15000);
+    await new Promise(r => setTimeout(r, 800));
+    const isAdmin = auth.currentUser && auth.currentUser.uid === APP_CONFIG.ADMIN_UID;
+
+    if (action === 'order') {
+      if (localStorage.getItem('currentAppView') === 'admin') {
+        localStorage.setItem('currentAppView', 'user');
+        await global.showUserView();
+      }
+      if (isNextWeek && !(st.currentMenuData && st.currentMenuData.nextMenuImageBase64)) {
+        await waitFor(() => !!(st.currentMenuData && st.currentMenuData.nextMenuImageBase64), 8000);
+      }
+      if (st.viewingNextWeek !== isNextWeek && (!isNextWeek || st.currentMenuData.nextMenuImageBase64)) {
+        st.viewingNextWeek = isNextWeek;
+        st.autoSwitchDone = true;
+        if (typeof global.updateUserViewUI === 'function') global.updateUserViewUI();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const rgfInput = document.getElementById('employeeRGF');
+      if (rgfInput && !rgfInput.value) rgfInput.focus();
+      return;
+    }
+
+    if (action === 'orders' || action === 'pdf') {
+      if (!isAdmin) {
+        document.getElementById('admin-login-modal').classList.remove('hidden');
+        showToast('Entre como ADM para ver os pedidos.', 'info');
+        return;
+      }
+      if (localStorage.getItem('currentAppView') !== 'admin' || document.getElementById('admin-view').classList.contains('hidden')) {
+        global.showAdminView();
+      }
+      st.allOrders = [];
+      global.setAdminTab(isNextWeek);
+      if (global.showAdminPanel) global.showAdminPanel('orders');
+      if (action === 'pdf') {
+        const loaded = await waitFor(() => st.allOrders && st.allOrders.length > 0, 15000);
+        if (loaded && global.generateAndShareReport) global.generateAndShareReport();
+      }
+    }
+  }
+  global.handleNotificationAction = handleNotificationAction;
+
+  // Site: o clique abre a pagina com ?notif=acao&next=true|false
+  function handleNotificationFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('notif');
+    if (!action) return;
+    const next = params.get('next');
+    params.delete('notif'); params.delete('next');
+    const query = params.toString();
+    history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+    handleNotificationAction(action, next);
+  }
+
+  // Site ja aberto: o service worker avisa a pagina do clique
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const msg = event.data || {};
+      if (msg.type === 'notification-click') handleNotificationAction(msg.action, msg.isNextWeek);
+    });
+  }
+
+  // =====================================================================
+  // NOTIFICACOES PUSH (Capacitor). So roda dentro do APK; no PWA ignora.
+  // Permissao, token FCM e associacao ao RGF ficam em pushRegistration.js;
+  // aqui tratamos as notificacoes recebidas com o app aberto e os cliques.
+  // =====================================================================
   function setupPushNotifications() {
-    if (!window.Capacitor || !Capacitor.isNativePlatform) return;
+    if (!window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
     const Push = Capacitor.Plugins.PushNotifications;
     if (!Push) return;
-    Push.requestPermissions().then((perm) => {
-      if (perm.receive === 'granted') registerDeviceToken();
-    }).catch(() => {});
-    const rgfEl = document.getElementById('employeeRGF');
-    if (rgfEl) rgfEl.addEventListener('change', registerDeviceToken);
+    const Local = Capacitor.Plugins.LocalNotifications;
+    // Com o app aberto o Android nao mostra o push na barra: repassa para LocalNotifications
     Push.addListener('pushNotificationReceived', (n) => {
-      try { if (n && n.data) showToast(n.title || 'Cardápio Quatinga', 'info', 4000); } catch (e) {}
+      if (!n) return;
+      const title = n.title || 'Cardápio Quatinga';
+      try { showToast(title, 'info', 4000); } catch (e) {}
+      if (Local) {
+        Local.schedule({
+          notifications: [{
+            id: Date.now() % 2147483647, title, body: n.body || '', extra: n.data || {},
+            channelId: 'cardapio_notifications', smallIcon: 'ic_notification'
+          }]
+        }).catch((e) => console.warn('LocalNotifications falhou:', e));
+      }
     });
-    Push.addListener('pushNotificationActionPerformed', () => {});
+    // Toque na notificacao com o app fechado/em segundo plano
+    Push.addListener('pushNotificationActionPerformed', (event) => {
+      const data = (event && event.notification && event.notification.data) || {};
+      handleNotificationAction(data.action, data.isNextWeek);
+    });
+    // Toque na notificacao repassada com o app aberto
+    if (Local) {
+      Local.addListener('localNotificationActionPerformed', (event) => {
+        const data = (event && event.notification && event.notification.extra) || {};
+        handleNotificationAction(data.action, data.isNextWeek);
+      });
+    }
   }
 
   // =====================================================================
@@ -532,4 +604,7 @@
 
   // Dispara o listener de auth (login anonimo / admin)
   setupAuthStateListener();
+
+  // Site aberto pelo clique numa notificacao
+  handleNotificationFromUrl();
 })(window);

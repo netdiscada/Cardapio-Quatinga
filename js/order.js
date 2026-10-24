@@ -193,6 +193,12 @@
       st.tempOrderData.isNextWeek = st.viewingNextWeek;
       // O Firebase salva localmente de forma sincrona.
       const orderPromise = fb.addDoc(fb.collection(global.db, "pedidosDaSemana"), st.tempOrderData);
+      // Avisa o ADM (com internet vai na hora; offline fica guardado e vai quando voltar)
+      const orderForNotify = { ...st.tempOrderData };
+      orderPromise.then(() => {
+        if (global.triggerOrderDoneNotification) global.triggerOrderDoneNotification(orderForNotify);
+      }).catch(() => {});
+      if (!navigator.onLine && global.triggerOrderDoneNotification) global.triggerOrderDoneNotification(orderForNotify);
       document.getElementById('confirmation-modal').classList.add('hidden');
       document.getElementById('form-container').classList.add('hidden');
       document.getElementById('success-message').classList.remove('hidden');
@@ -200,10 +206,6 @@
         await orderPromise;
         document.getElementById('success-text').textContent = `Obrigado, ${st.tempOrderData.employeeName}. O seu pedido foi registado com sucesso.`;
         showToast("Pedido enviado com sucesso!", 'success');
-        // Dispara notificação push para admin se for pedido antecipado
-        if (st.viewingNextWeek && global.triggerNewOrderNotification) {
-          global.triggerNewOrderNotification({ ...st.tempOrderData, id: 'local-' + Date.now() });
-        }
       } else {
         document.getElementById('success-text').textContent = `Obrigado, ${st.tempOrderData.employeeName}. O seu pedido foi salvo no celular e será enviado automaticamente assim que houver internet.`;
         showToast("Salvo offline!", 'info');

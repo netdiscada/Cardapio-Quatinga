@@ -1,5 +1,5 @@
 // Cardapio Quatinga v3 - notificationChecker.js
-// Polling local para notificações (sem servidor, funciona offline/APK/PWA)
+// Lembrete local para o funcionário que ainda não pediu (funciona offline/APK/PWA)
 // Incluir no index.html ANTES de app.js: <script src="js/notificationChecker.js"></script>
 
 (function (global) {
@@ -9,9 +9,6 @@
 
   // Estado do checker
   const checkerState = {
-    lastMenuHash: null,
-    lastOrdersCount: 0,
-    lastAllOrderedNotified: false,
     intervalId: null,
     isAdmin: false,
     employeeRGF: null,
@@ -60,89 +57,6 @@
     }
   }
 
-  // Hash simples para detectar mudança no cardápio
-  function hashMenu(data) {
-    if (!data) return null;
-    const str = (data.menuImageBase64 || '') + (data.nextMenuImageBase64 || '') + JSON.stringify(data.holidays || []) + JSON.stringify(data.nextHolidays || []);
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash;
-  }
-
-  // Verifica cardápio (funcionários e admin)
-  async function checkMenu() {
-    try {
-      const docSnap = await fb.getDoc(global.getMenuDocRef());
-      if (!docSnap.exists) return;
-
-      const data = docSnap.data();
-      const currentHash = hashMenu(data);
-
-      if (checkerState.lastMenuHash !== null && currentHash !== checkerState.lastMenuHash) {
-        // Cardápio mudou
-        const hasNext = !!data.nextMenuImageBase64;
-        showLocalNotification(
-          hasNext ? '📅 Cardápio da Próxima Semana!' : '🍽️ Novo Cardápio!',
-          hasNext ? 'O cardápio antecipado já está disponível. Escolha seus pratos!' : 'O cardápio desta semana foi atualizado. Faça seu pedido.',
-          { type: 'new_menu', isNextWeek: hasNext, tag: 'new-menu-' + Date.now() }
-        );
-      }
-      checkerState.lastMenuHash = currentHash;
-    } catch (e) { console.warn('checkMenu error:', e); }
-  }
-
-  // Verifica pedidos (admin vê novos pedidos; funcionário vê se já pediu)
-  async function checkOrders() {
-    try {
-      if (checkerState.isAdmin) {
-        // Admin: conta pedidos e detecta novos
-        const snap = await fb.getDocs(fb.collection(global.db, 'pedidosDaSemana'));
-        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const currentCount = orders.length;
-
-        if (checkerState.lastOrdersCount > 0 && currentCount > checkerState.lastOrdersCount) {
-          // Novos pedidos desde última verificação
-          const newOrders = orders.slice(0, currentCount - checkerState.lastOrdersCount);
-          newOrders.forEach(order => {
-            if (order.isNextWeek) {
-              showLocalNotification(
-                '📋 Novo Pedido Antecipado',
-                `${order.employeeName || 'Funcionário'} fez o pedido para a próxima semana.`,
-                { type: 'new_order', orderId: order.id, tag: 'new-order-' + order.id }
-              );
-            }
-          });
-        }
-
-        // Verifica "Todos já escolheram" (semana atual)
-        const funcsSnap = await fb.getDocs(global.getFuncionariosCollectionRef());
-        // O cadastro de funcionarios nao grava 'ativo'; so exclui quem tiver ativo === false
-        const activeRGFs = funcsSnap.docs.filter(d => d.data().ativo !== false).map(d => d.id);
-        const currentWeekOrders = orders.filter(o => !o.isNextWeek).map(o => o.employeeRGF).filter(Boolean);
-        const missing = activeRGFs.filter(rgf => !currentWeekOrders.includes(rgf));
-
-        if (missing.length === 0 && activeRGFs.length > 0 && !checkerState.lastAllOrderedNotified) {
-          showLocalNotification(
-            '✅ Todos já escolheram!',
-            `Todos os ${activeRGFs.length} funcionários ativos fizeram o pedido desta semana.`,
-            { type: 'all_ordered', total: activeRGFs.length, tag: 'all-ordered' }
-          );
-          checkerState.lastAllOrderedNotified = true;
-        } else if (missing.length > 0) {
-          checkerState.lastAllOrderedNotified = false;
-        }
-
-        checkerState.lastOrdersCount = currentCount;
-      } else {
-        // Funcionário: lembrete a cada 15 min se não fez pedido da semana atual
-        await checkEmployeeReminder();
-      }
-    } catch (e) { console.warn('checkOrders error:', e); }
-  }
-
   // Lembrete para funcionário: a cada 15 min avisa se não fez pedido da semana atual
   async function checkEmployeeReminder() {
     try {
@@ -179,11 +93,11 @@
     } catch (e) { console.warn('checkEmployeeReminder error:', e); }
   }
 
-  // Loop principal
+  // Loop principal. Cardapio novo, pedidos e "todos concluiram" chegam por push real
+  // (notificationTrigger.js + Cloudflare Worker); aqui fica so o lembrete do funcionario.
   async function runChecks() {
-    if (!auth.currentUser) return;
-    await checkMenu();
-    await checkOrders();
+    if (!auth.currentUser || checkerState.isAdmin) return;
+    await checkEmployeeReminder();
   }
 
   // Inicia o checker (chamado após login)
@@ -191,10 +105,6 @@
     checkerState.isAdmin = isAdmin;
     checkerState.employeeRGF = rgf;
     checkerState.employeeName = name;
-
-    // Pega estado inicial
-    await checkMenu();
-    await checkOrders();
 
     // Pede permissão
     await requestNotificationPermission();
@@ -213,9 +123,6 @@
       clearInterval(checkerState.intervalId);
       checkerState.intervalId = null;
     }
-    checkerState.lastMenuHash = null;
-    checkerState.lastOrdersCount = 0;
-    checkerState.lastAllOrderedNotified = false;
     checkerState.isAdmin = false;
     checkerState.employeeRGF = null;
     checkerState.employeeName = null;

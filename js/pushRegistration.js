@@ -1,194 +1,179 @@
 // Cardapio Quatinga v3 - pushRegistration.js
-// Registra token FCM (Android nativo) E Web Push subscription (PWA/navegador)
-// no Firestore (coleção deviceTokens) com role (funcionario/admin) e active=true.
+// Registra o token FCM do aparelho na colecao deviceTokens (role funcionario/admin, rgf, active).
+//  - APK: token nativo pelo plugin PushNotifications do Capacitor
+//  - Site: token web pelo Firebase Cloud Messaging (service worker sw-v2.js)
+// O token e salvo de novo quando o login muda (ADM entra/sai) e quando o RGF muda.
 
 (function (global) {
   const db = global.db;
   const auth = global.auth;
   const APP_CONFIG = global.APP_CONFIG;
 
-  // VAPID Public Key (gerada com: npx web-push generate-vapid-keys)
-  const VAPID_PUBLIC_KEY = 'BMmYnn-I2T0trwfsb4gwFhYbPuvIKxI_HibaYjxXFf02FItlEFNiA82LaJ_QQu7vNnYgoSx1wLARVPCywvCrtxU';
+  // Chave publica "Certificados push da Web" do projeto (Firebase > Cloud Messaging)
+  const WEB_PUSH_VAPID_KEY = 'BIL4MyC_jrf2cmwU5EUnEWBE4rQGNzg9Eiu2rf48QpRnxLtFpck-iBidDn4jGy993CKza2Td3-YBgwVhmvmD6ww';
 
-  // Helper: converte base64url para Uint8Array para pushManager.subscribe
-  function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    return Uint8Array.from(rawData, c => c.charCodeAt(0));
+  const isNative = !!(global.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+
+  function currentRole() {
+    return auth?.currentUser?.uid === APP_CONFIG.ADMIN_UID ? 'admin' : 'funcionario';
   }
 
-  async function saveTokenToFirestore(token, role, rgf, platform = 'android', endpoint = null, p256dh = null, authSecret = null) {
+  function currentRgf() {
+    const rgfEl = document.getElementById('employeeRGF');
+    return rgfEl?.value?.trim() || localStorage.getItem('employeeRGF') || null;
+  }
+
+  async function saveToken(token, platform) {
+    if (!token || !auth?.currentUser) return;
+    const role = currentRole();
     try {
-      const docData = {
-        token, rgf: rgf || null, role,
-        active: true, platform,
+      await db.collection('deviceTokens').doc(token).set({
+        token,
+        rgf: role === 'admin' ? null : currentRgf(),
+        role,
+        active: true,
+        platform,
         updatedAt: global.firebase.firestore.FieldValue.serverTimestamp()
-      };
-      // Web Push fields
-      if (endpoint) {
-        docData.endpoint = endpoint;
-        docData.p256dh = p256dh;
-        docData.auth = authSecret;
-      }
-      await db.collection('deviceTokens').doc(token).set(docData, { merge: true });
-      console.log('[pushRegistration] Token salvo:', token.substring(0,20)+'...', 'role:', role, 'platform:', platform);
+      }, { merge: true });
+      console.log('[pushRegistration] Token salvo:', token.substring(0, 20) + '...', 'role:', role, 'platform:', platform);
     } catch (err) {
-      console.error('[pushRegistration] Erro save:', err);
+      console.error('[pushRegistration] Erro ao salvar token:', err);
     }
+  }
+
+  function saveKnownTokens() {
+    const native = localStorage.getItem('fcmToken');
+    const web = localStorage.getItem('fcmWebToken');
+    if (isNative && native) saveToken(native, 'android');
+    if (!isNative && web) saveToken(web, 'web');
   }
 
   // ===== NATIVO (Capacitor/FCM) =====
+  let nativeListenersAdded = false;
   async function registerNativeToken() {
-    if (!window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.Plugins?.PushNotifications) {
-      console.log('[pushRegistration] Capacitor nativo não disponível');
-      return;
-    }
-    const Push = Capacitor.Plugins.PushNotifications;
-
+    const Push = global.Capacitor?.Plugins?.PushNotifications;
+    if (!isNative || !Push) return;
     try {
       const perm = await Push.requestPermissions();
       console.log('[pushRegistration] Permissão nativa:', perm.receive);
       if (perm.receive !== 'granted') return;
 
-      await Push.addListener('registration', async (tokenObj) => {
-        const token = tokenObj?.value || tokenObj?.token;
-        if (!token) { console.warn('[pushRegistration] Token nativo vazio'); return; }
-        console.log('[pushRegistration] Token FCM nativo:', token.substring(0,20)+'...');
-
-        const isAdmin = !!(auth?.currentUser?.uid === APP_CONFIG.ADMIN_UID);
-        const role = isAdmin ? 'admin' : 'funcionario';
-        const rgfEl = document.getElementById('employeeRGF');
-        const rgf = rgfEl?.value?.trim() || null;
-
-        await saveTokenToFirestore(token, role, rgf, 'android');
-        localStorage.setItem('fcmToken', token);
-      });
-
-      await Push.addListener('registrationError', (err) => {
-        console.error('[pushRegistration] registrationError nativo:', err);
-      });
-
-      console.log('[pushRegistration] Registrando no FCM nativo...');
+      if (!nativeListenersAdded) {
+        nativeListenersAdded = true;
+        await Push.addListener('registration', async (tokenObj) => {
+          const token = tokenObj?.value || tokenObj?.token;
+          if (!token) return;
+          localStorage.setItem('fcmToken', token);
+          await saveToken(token, 'android');
+        });
+        await Push.addListener('registrationError', (err) => {
+          console.error('[pushRegistration] registrationError nativo:', err);
+        });
+      }
       await Push.register();
-      console.log('[pushRegistration] Push.register() ok — aguardando token...');
-
     } catch (e) {
       console.error('[pushRegistration] Falha nativa:', e);
     }
   }
 
-  // ===== WEB PUSH (PWA / navegador) =====
+  // ===== SITE (Firebase Cloud Messaging web) =====
+  function webPushSupported() {
+    return !isNative && 'serviceWorker' in navigator && 'Notification' in window && 'PushManager' in window && !!global.firebase?.messaging;
+  }
+
+  function sameKey(buffer, base64url) {
+    if (!buffer) return false;
+    const padded = base64url.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - base64url.length % 4) % 4);
+    const expected = atob(padded);
+    const actual = new Uint8Array(buffer);
+    if (actual.length !== expected.length) return false;
+    for (let i = 0; i < actual.length; i++) if (actual[i] !== expected.charCodeAt(i)) return false;
+    return true;
+  }
+
+  let webMessageListenerAdded = false;
   async function registerWebPush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.log('[pushRegistration] Web Push não suportado neste navegador');
-      return;
-    }
-    // Não registra Web Push se já for nativo (evita duplicar)
-    if (window.Capacitor?.isNativePlatform) {
-      console.log('[pushRegistration] Plataforma nativa — pulando Web Push');
-      return;
-    }
-
+    if (!webPushSupported() || Notification.permission !== 'granted') return;
     try {
+      if (!(await global.firebase.messaging.isSupported())) return;
       const reg = await navigator.serviceWorker.ready;
-      console.log('[pushRegistration] Service Worker pronto');
-
-      // Verifica permissão de notificação
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.log('[pushRegistration] Permissão de notificação negada:', permission);
-        return;
+      // Inscricao antiga (Web Push com outra chave) impede o FCM de funcionar: remove
+      const old = await reg.pushManager.getSubscription();
+      if (old && !sameKey(old.options && old.options.applicationServerKey, WEB_PUSH_VAPID_KEY)) {
+        await old.unsubscribe();
       }
+      const messaging = global.firebase.messaging();
+      const token = await messaging.getToken({ vapidKey: WEB_PUSH_VAPID_KEY, serviceWorkerRegistration: reg });
+      if (!token) return;
+      localStorage.setItem('fcmWebToken', token);
+      await saveToken(token, 'web');
 
-      // Verifica se já tem subscription
-      let subscription = await reg.pushManager.getSubscription();
-      if (subscription) {
-        console.log('[pushRegistration] Web Push subscription existente:', subscription.endpoint.substring(0,50)+'...');
-      } else {
-        // Cria nova subscription
-        console.log('[pushRegistration] Criando nova Web Push subscription...');
-        subscription = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      // Com o site aberto o navegador nao mostra o push sozinho: mostra pelo service worker
+      if (!webMessageListenerAdded) {
+        webMessageListenerAdded = true;
+        messaging.onMessage((payload) => {
+          const n = payload.notification || {};
+          const data = payload.data || {};
+          try { global.showToast && global.showToast(n.title || 'Cardápio Quatinga', 'info', 4000); } catch (e) {}
+          reg.showNotification(n.title || 'Cardápio Quatinga', {
+            body: n.body || '',
+            icon: 'icon.png',
+            tag: data.action || 'cardapio',
+            data: { action: data.action, isNextWeek: data.isNextWeek }
+          }).catch(() => {});
         });
-        console.log('[pushRegistration] Nova subscription:', subscription.endpoint.substring(0,50)+'...');
       }
-
-      // Extrai chaves
-      const key = subscription.getKey('p256dh');
-      const authSecret = subscription.getKey('auth');
-      const p256dh = key ? btoa(String.fromCharCode(...new Uint8Array(key))) : null;
-      const authB64 = authSecret ? btoa(String.fromCharCode(...new Uint8Array(authSecret))) : null;
-
-      const isAdmin = !!(auth?.currentUser?.uid === APP_CONFIG.ADMIN_UID);
-      const role = isAdmin ? 'admin' : 'funcionario';
-      const rgfEl = document.getElementById('employeeRGF');
-      const rgf = rgfEl?.value?.trim() || null;
-
-      // Usa endpoint como "token" único para Web Push
-      await saveTokenToFirestore(
-        subscription.endpoint, role, rgf, 'web',
-        subscription.endpoint, p256dh, authB64
-      );
-      localStorage.setItem('webPushEndpoint', subscription.endpoint);
-      localStorage.setItem('webPushP256dh', p256dh || '');
-      localStorage.setItem('webPushAuth', authB64 || '');
-
     } catch (e) {
-      console.error('[pushRegistration] Falha Web Push:', e);
-      // Debug detalhado
-      if (e.name === 'NotAllowedError') {
-        console.log('[pushRegistration] Usuário negou permissão de notificação');
-      } else if (e.name === 'NotSupportedError') {
-        console.log('[pushRegistration] Navegador não suporta Web Push');
-      } else {
-        console.log('[pushRegistration] Erro:', e.name, e.message);
-      }
+      console.error('[pushRegistration] Falha no push do site:', e);
     }
+  }
+
+  // Botao "Ativar notificacoes" no site: o iPhone (e varios navegadores) so deixam pedir
+  // permissao depois de um toque do usuario
+  function showEnableButton() {
+    if (!webPushSupported() || Notification.permission !== 'default') return;
+    if (document.getElementById('enable-notifications-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'enable-notifications-btn';
+    btn.type = 'button';
+    btn.textContent = '🔔 Ativar notificações';
+    btn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:1000;' +
+      'background:#2563eb;color:#fff;border:0;border-radius:9999px;padding:12px 20px;font-weight:700;' +
+      'box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:15px;';
+    btn.addEventListener('click', async () => {
+      const perm = await Notification.requestPermission();
+      btn.remove();
+      if (perm === 'granted') {
+        global.showToast && global.showToast('Notificações ativadas!', 'success');
+        registerWebPush();
+      }
+    });
+    document.body.appendChild(btn);
   }
 
   // Re-registra/associa token ao digitar RGF
   function bindRgfReassociation() {
     const rgfEl = document.getElementById('employeeRGF');
     if (!rgfEl) return;
-    rgfEl.addEventListener('change', async () => {
-      const rgf = rgfEl.value.trim();
-      const isAdmin = !!(auth?.currentUser?.uid === APP_CONFIG.ADMIN_UID);
-      const role = isAdmin ? 'admin' : 'funcionario';
-
-      // Atualiza FCM nativo
-      const fcmToken = localStorage.getItem('fcmToken');
-      if (fcmToken) {
-        await saveTokenToFirestore(fcmToken, role, rgf, 'android');
-      }
-      // Atualiza Web Push
-      const webEndpoint = localStorage.getItem('webPushEndpoint');
-      if (webEndpoint) {
-        const key = localStorage.getItem('webPushP256dh');
-        const authSecret = localStorage.getItem('webPushAuth');
-        await saveTokenToFirestore(webEndpoint, role, rgf, 'web', webEndpoint, key, authSecret);
-      }
-    });
+    rgfEl.addEventListener('change', saveKnownTokens);
   }
 
-  // Inicialização
-  async function init() {
+  function init() {
     bindRgfReassociation();
-
-    // Tenta registrar ambos (um vai funcionar dependendo da plataforma)
-    if (auth?.currentUser) {
-      console.log('[pushRegistration] Usuário já logado:', auth.currentUser.uid);
-      await Promise.all([registerNativeToken(), registerWebPush()]);
-    } else {
-      const unsub = auth?.onAuthStateChanged(async (user) => {
-        if (user) {
-          console.log('[pushRegistration] Auth state changed:', user.uid);
-          await Promise.all([registerNativeToken(), registerWebPush()]);
-          unsub && unsub();
-        }
-      });
-    }
+    if (!auth) return;
+    let started = false;
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+      if (!started) {
+        started = true;
+        registerNativeToken();
+        registerWebPush();
+        showEnableButton();
+      } else {
+        // ADM entrou ou saiu: atualiza o papel do aparelho
+        saveKnownTokens();
+      }
+    });
   }
 
   if (document.readyState === 'loading') {

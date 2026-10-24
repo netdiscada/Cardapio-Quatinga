@@ -1,8 +1,45 @@
-const CACHE_NAME = 'cardapio-v14';
+const CACHE_NAME = 'cardapio-v15';
+
+// ===== Notificacoes do site (Firebase Cloud Messaging) =====
+// Com o site fechado o FCM mostra a notificacao sozinho e, no clique, abre o link
+// que o Worker mandou (?notif=acao&next=...). Sem config.js aqui: o SW nao tem window.
+importScripts('vendor/firebase-app-compat.js', 'vendor/firebase-messaging-compat.js');
+firebase.initializeApp({
+  apiKey: 'AIzaSyDVaHDQ-gqnRHCEPopne1kzhIKAo2gIIGQ',
+  authDomain: 'cardapio-8ddea.firebaseapp.com',
+  projectId: 'cardapio-8ddea',
+  storageBucket: 'cardapio-8ddea.appspot.com',
+  messagingSenderId: '1019677985212',
+  appId: '1:1019677985212:web:57c7820a62585a867dc3b9'
+});
+firebase.messaging();
+
+// Clique nas notificacoes que a propria pagina mostrou (site aberto). As do FCM
+// (data.FCM_MSG) ficam com o handler do Firebase.
+self.addEventListener('notificationclick', (event) => {
+  const data = event.notification.data || {};
+  if (data.FCM_MSG || !data.action) return;
+  event.notification.close();
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const client = all[0];
+    if (client) {
+      await client.focus();
+      client.postMessage({ type: 'notification-click', action: data.action, isNextWeek: data.isNextWeek });
+    } else {
+      const url = new URL('./', self.registration.scope);
+      url.searchParams.set('notif', data.action);
+      if (data.isNextWeek) url.searchParams.set('next', data.isNextWeek);
+      await self.clients.openWindow(url.href);
+    }
+  })());
+});
 
 const CORE_ASSETS = [
   './',
   './index.html',
+  './manifest.json',
+  './icon.png',
   './css/styles.css',
   './js/config.js',
   './js/firebase.js',
@@ -41,7 +78,9 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = request.url;
 
-  if (url.includes('firebase') || url.includes('googleapis')) return;
+  // So o dominio importa: os arquivos vendor/firebase-*.js do proprio site devem ir pro cache
+  const host = new URL(url).hostname;
+  if (host.includes('firebase') || host.includes('googleapis') || host.includes('gstatic')) return;
   if (request.method !== 'GET') return;
   // APIs com dados que mudam (contracheque, releases, push): nunca servir do cache,
   // senao o cache-first devolve para sempre a primeira resposta.
