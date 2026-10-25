@@ -773,3 +773,196 @@ html.dark .btn-ghost.danger { color: #FCA5A5; }
 #adm-pop-body .menutext-head p { margin: 0 0 4px; }
 #adm-pop-body img#admin-current-image { height: auto !important; max-height: 50vh; object-fit: contain !important; }
 body.pop-open { overflow: hidden; }
+
+/* ===== Rodada 3 (pedidos do usuário em 25/10) ===== */
+
+/* Início: linha pequena da semana no lugar do cartão azul */
+.week-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -6px 4px 14px; flex-wrap: wrap; }
+.week-row.hidden { display: none; }
+.week-label { display: inline-flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: var(--primary-text); }
+.week-range { font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.chip-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip-btn svg { width: 15px; height: 15px; }
+.chip-btn.hidden { display: none; }
+
+/* PDF oficial no fim da página */
+#publicReportButtonContainer { margin: 0 0 16px; }
+#publicReportButtonContainer.hidden { display: none; }
+.pdf-row {
+  width: 100%;
+  border-radius: 20px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.pdf-row:disabled { opacity: 0.6; }
+.pdf-row-text { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+.pdf-row-text strong { font-size: 15px; font-weight: 800; }
+.pdf-row-text span { font-size: 13px; font-weight: 500; color: var(--muted); line-height: 1.35; }
+.pdf-row-arrow { width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; }
+
+/* Pagamento: um cartão por mês */
+.pay-months { display: flex; flex-direction: column; gap: 10px; }
+.pay-months.hide-past .past-month { display: none; }
+.pay-month { border: 1px solid var(--border); border-radius: 18px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.pay-month.past-month { opacity: 0.55; }
+.pay-month.current { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(47, 91, 234, 0.15); }
+.pay-month-name { font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.pay-month-name span { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-text); }
+.pay-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.pay-item { border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; background: var(--surface-2); }
+.pay-item span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.pay-item strong { font-size: 16px; font-weight: 800; color: var(--text); }
+.pay-item.pay strong { color: #15803D; }
+.pay-item.adv strong { color: var(--primary-text); }
+.pay-item.bonus { background: #FEF3C7; }
+.pay-item.bonus span, .pay-item.bonus strong { color: #92400E; }
+html.dark .pay-item.pay strong { color: #86EFAC; }
+html.dark .pay-item.bonus { background: #3A2A0E; }
+html.dark .pay-item.bonus span, html.dark .pay-item.bonus strong { color: #FCD34D; }
+.pay-item.done { opacity: 0.55; }
+
+/* ADM Pedidos: quem já pediu */
+.order-status { display: flex; flex-direction: column; gap: 12px; }
+.status-pills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.status-pill { border-radius: 16px; padding: 12px 14px; display: flex; align-items: baseline; gap: 8px; }
+.status-pill b { font-size: 26px; font-weight: 800; }
+.status-pill span { font-size: 14px; font-weight: 700; }
+.status-pill.ok { background: #DCFCE7; color: #166534; }
+.status-pill.warn { background: #FFEDD5; color: #9A3412; }
+html.dark .status-pill.ok { background: #0F2E1F; color: #86EFAC; }
+html.dark .status-pill.warn { background: #3A2312; color: #FDBA74; }
+.status-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+.name-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.name-chip { font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text); }
+.name-chip.warn { background: #FFEDD5; color: #9A3412; }
+html.dark .name-chip.warn { background: #3A2312; color: #FDBA74; }
+.status-more summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--primary-text); margin-bottom: 8px; }
+
+/* ADM Pedidos: semana, busca, PDF, resumo do dia e cartões */
+#admin-view-current, #admin-view-next { min-height: 38px; border-radius: 10px !important; box-shadow: none !important; background: transparent !important; color: var(--muted) !important; font-weight: 700 !important; }
+#admin-view-current.shadow-sm, #admin-view-next.shadow-sm { background: var(--primary-soft) !important; color: var(--primary-text) !important; font-weight: 800 !important; }
+#orders-section > div:first-child > div { background: var(--surface) !important; border-color: var(--border) !important; border-radius: 14px !important; }
+.pdf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.pdf-btn svg { width: 18px; height: 18px; }
+@media (min-width: 640px) { .pdf-btn { width: auto; } }
+.day-sums { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.day-sum { border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; background: var(--surface); display: flex; flex-direction: column; gap: 3px; }
+.day-sum strong { font-size: 13px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: 0.4px; }
+.day-sum span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.day-sum span b { color: var(--text); }
+.day-sum.holiday { background: #FFF7ED; border-color: #FED7AA; }
+.day-sum.holiday span { color: #9A3412; }
+html.dark .day-sum.holiday { background: #2A1A0E; border-color: #6B3A16; }
+html.dark .day-sum.holiday span { color: #FDBA74; }
+.order-rows { display: flex; flex-direction: column; gap: 10px; }
+.order-row { border: 1px solid var(--border); border-radius: 18px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.order-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.order-row-head > div:first-child { display: flex; flex-direction: column; min-width: 0; }
+.order-row-head strong { font-size: 15px; font-weight: 800; color: var(--text); }
+.order-row-head span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.order-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.o-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.o-day { border-radius: 12px; padding: 6px 4px; background: var(--surface-2); font-size: 12px; font-weight: 800; color: var(--text); text-align: center; display: flex; flex-direction: column; gap: 1px; line-height: 1.15; overflow-wrap: anywhere; }
+.o-day small { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.o-day i { font-style: normal; font-size: 10px; color: #C2410C; }
+.o-day.holiday { background: #FFEDD5; color: #9A3412; }
+.o-day.empty { color: var(--muted); }
+html.dark .o-day.holiday { background: #3A2312; color: #FDBA74; }
+.o-notes { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.empty-note { text-align: center; color: var(--muted); font-weight: 600; padding: 12px; }
+
+/* ADM Dev: ferramentas */
+.tools-title { margin: 4px 0 8px; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.tool-tile { border: 1px solid var(--border); border-radius: 18px; padding: 12px; background: var(--surface); color: var(--text); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; cursor: pointer; min-height: 0 !important; }
+.tool-tile.hidden { display: none; }
+.tool-text { display: flex; flex-direction: column; gap: 2px; }
+.tool-text strong { font-size: 14px; font-weight: 800; }
+.tool-text span { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+.mini-icon.danger { background: #FEE2E2; color: #B91C1C; }
+html.dark .mini-icon.danger { background: #3B1414; color: #FCA5A5; }
+
+/* ADM Dev: inteligência artificial */
+.ai-panel { display: flex; flex-direction: column; gap: 10px; }
+.ai-status { display: flex; flex-wrap: wrap; gap: 6px; }
+.ai-chip { font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.ai-chip.on { background: #DCFCE7; color: #166534; }
+html.dark .ai-chip.on { background: #0F2E1F; color: #86EFAC; }
+.ai-section { margin: 6px 0 0; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.ai-help { margin: 0; font-size: 13px; color: var(--muted); }
+.seg-wrap { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg-wrap button { min-height: 44px; white-space: normal; line-height: 1.2; }
+.ai-models { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.ai-models label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.ai-models select { padding: 0 12px; }
+.ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-actions button { flex: 1 1 160px; }
+.ai-test-result { border: 1px solid var(--border); border-radius: 14px; padding: 12px; font-size: 14px; color: var(--text); background: var(--surface-2); }
+.ai-test-result.hidden { display: none; }
+.ai-test-result ul { margin: 6px 0 0; padding-left: 18px; }
+.ai-key-form { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-key-form input { flex: 1 1 200px; min-width: 0; padding: 0 14px; }
+
+/* ADM Funcionários */
+#employee-management-section .mb-4 > .flex { gap: 8px; }
+.emp-search { flex: 1 1 auto; min-width: 0; padding: 0 14px; }
+.emp-add { min-height: 48px; padding: 0 14px; flex-shrink: 0; }
+.emp-count { margin: 4px 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.emp-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.emp-info { display: flex; flex-direction: column; min-width: 0; flex-grow: 1; }
+.emp-info strong { font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.emp-info span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.emp-row .btn-ghost { min-height: 36px; padding: 0 10px; }
+.emp-form { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface-2); }
+.emp-form.hidden { display: none; }
+.emp-form input { padding: 0 14px; }
+
+/* ADM RGF */
+#rgf-consult-form input { padding: 0 14px; }
+#rgf-consult-section > p { color: var(--muted) !important; }
+
+/* Janela Próxima semana: dias de feriado grandes e fáceis de tocar */
+#holidayCalendar { gap: 6px !important; }
+#holidayCalendar > div { width: 100% !important; height: auto !important; min-height: 30px; border-radius: 10px !important; background: transparent !important; font-weight: 700 !important; }
+#holidayCalendar > [data-day-id] { min-height: 52px; font-size: 17px; font-weight: 800 !important; border-radius: 14px !important; background: var(--surface-2) !important; color: var(--text) !important; cursor: pointer; }
+#holidayCalendar > [data-day-id].bg-red-500 { background: #F97316 !important; color: #FFFFFF !important; }
+
+#orders-section > div:first-child { align-items: flex-start !important; }
+
+/* Campos dentro da janela do ADM (ela fica fora do #app-container) */
+#adm-pop input[type="text"], #adm-pop input[type="password"], #adm-pop input[type="tel"], #adm-pop input[type="number"], #adm-pop select, #adm-pop textarea {
+  min-height: 48px;
+  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  font-size: 15px;
+  padding: 0 14px;
+}
+#adm-pop textarea { padding: 12px 14px; }
+#adm-pop select { appearance: auto; }
+#adm-pop input:focus, #adm-pop select:focus, #adm-pop textarea:focus { outline: none !important; border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.18) !important; }
+#adm-pop button.rounded-lg, #adm-pop button.rounded { min-height: 44px; border-radius: 14px !important; font-weight: 800 !important; }
+
+.emp-info strong { white-space: normal; overflow: visible; line-height: 1.25; }
+#holidayCalendar > * { width: 100% !important; }

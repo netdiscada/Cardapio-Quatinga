@@ -214,30 +214,24 @@
     const nextEl = document.getElementById('user-next-payment');
     if (!tableEl) return;
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-    let html = '';
-    PAYMENT_2026.forEach((p, i) => {
-      const dPag = new Date(2026, i, p.pag);
-      const dAdi = new Date(2026, i, p.adi);
-      const passou = dPag < hoje && dAdi < hoje;
-      const isCurrentMonth = hoje.getMonth() === i && hoje.getFullYear() === 2026;
-      const destaque = isCurrentMonth ? ' ring-2 ring-green-400' : (passou ? ' opacity-50' : '');
-      
-      let decimoHtml = '';
-      if (p.decimo) {
-        const dDec = new Date(2026, i, p.decimo);
-        const passouDec = dDec < hoje;
-        decimoHtml = `<span class="font-bold text-amber-700 dark:text-amber-400${passouDec ? ' opacity-50' : ''}" title="13º Salário">13º ${String(p.decimo).padStart(2, '0')}</span>`;
-      }
-      
-      html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
-        <p class="font-bold text-sm text-gray-800 dark:text-gray-100">${p.mes}</p>
-        <div class="flex gap-3 text-sm">
-          <span class="font-bold text-green-700 dark:text-green-400">Pag. ${String(p.pag).padStart(2, '0')}</span>
-          <span class="font-bold text-blue-600 dark:text-blue-400">Adi. ${String(p.adi).padStart(2, '0')}</span>
-          ${decimoHtml}
-        </div>
-      </div>`;
+    // Um cartão por mês: próximos primeiro; os que já passaram ficam atrás de um botão.
+    // Cada data tem nome (Pagamento, Adiantamento, 13º) para não misturar.
+    const fmt = (d) => String(d).padStart(2, '0');
+    const row = (label, dia, mesIdx, cls) => {
+      const data = new Date(2026, mesIdx, dia);
+      const passou = data < hoje;
+      return `<div class="pay-item ${cls}${passou ? ' done' : ''}"><span>${label}</span><strong>${fmt(dia)}/${fmt(mesIdx + 1)}</strong></div>`;
+    };
+    const cards = PAYMENT_2026.map((p, i) => {
+      const ultimo = Math.max(p.pag, p.adi, p.decimo || 0);
+      const passou = new Date(2026, i, ultimo) < hoje;
+      const atual = hoje.getMonth() === i && hoje.getFullYear() === 2026;
+      const itens = [row('Pagamento', p.pag, i, 'pay'), row('Adiantamento', p.adi, i, 'adv')];
+      if (p.decimo) itens.push(row(i === 10 ? '13º salário · 1ª parcela' : '13º salário · 2ª parcela', p.decimo, i, 'bonus'));
+      return `<div class="pay-month${passou ? ' past-month' : ''}${atual ? ' current' : ''}"><div class="pay-month-name">${p.mes}${atual ? ' <span>este mês</span>' : ''}</div><div class="pay-items">${itens.join('')}</div></div>`;
     });
+    let html = `<div id="pay-months" class="pay-months hide-past">${cards.join('')}</div>
+      <button type="button" class="btn-ghost w-full mt-3" onclick="const l=document.getElementById('pay-months');l.classList.toggle('hide-past');this.textContent=l.classList.contains('hide-past')?'Mostrar meses que já passaram':'Esconder meses que já passaram'">Mostrar meses que já passaram</button>`;
     tableEl.innerHTML = html;
     // Cartao do proximo evento (pagamento, adiantamento ou 13º)
     const allEvents = [];

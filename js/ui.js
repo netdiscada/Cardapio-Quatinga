@@ -274,33 +274,63 @@
   }
 
   // ===== Tabela de pedidos =====
+  // Nome curto da opção para caber no cartão
+  function shortChoice(choice) {
+    const c = String(choice || '');
+    if (c === 'Prato Principal') return 'Principal';
+    if (c === 'Filé de frango') return 'Frango';
+    return c;
+  }
+
   function renderOrdersTable(orders) {
+    const st = S();
     const container = document.getElementById('ordersTableContainer');
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const holidays = (st.adminViewingNextWeek ? st.currentMenuData.nextHolidays : st.currentMenuData.holidays) || [];
     const filteredOrders = orders.filter(doc => doc.data().employeeName.toLowerCase().includes(searchTerm));
-    if (filteredOrders.length === 0) { container.innerHTML = '<p class="text-gray-500 font-medium text-center py-4">Nenhum pedido encontrado nesta seleção.</p>'; return; }
-    let tableHTML = `<table class="min-w-full bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg overflow-hidden"><thead><tr class="bg-gray-50 dark:bg-slate-800/80"><th class="py-2 px-3 border-b dark:border-slate-600 text-left text-gray-700 dark:text-slate-300 font-bold">Funcionário</th><th class="py-2 px-3 border-b dark:border-slate-600 text-left text-gray-700 dark:text-slate-300 font-bold">RGF</th>`;
-    weekDays.forEach(item => tableHTML += `<th class="py-2 px-3 border-b dark:border-slate-600 text-left text-gray-700 dark:text-slate-300 font-bold">${item.substring(0, 3)}</th>`);
-    tableHTML += `<th class="py-2 px-3 border-b dark:border-slate-600 text-left text-gray-700 dark:text-slate-300 font-bold">Ações</th></tr></thead><tbody>`;
-    filteredOrders.forEach(doc => {
+
+    // Resumo por dia (o que a cozinha precisa saber): quantos de cada opção
+    const summary = weekDays.map((day, i) => {
+      const dayId = getDayId(day);
+      const allHoliday = orders.length > 0 && orders.every(doc => doc.data()[dayId] === 'FERIADO');
+      if (holidays.includes(dayId) || allHoliday) return `<div class="day-sum holiday"><strong>${day.slice(0, 3)}</strong><span>Feriado</span></div>`;
+      const counts = {};
+      orders.forEach(doc => { const c = doc.data()[dayId]; if (c && c !== 'FERIADO') counts[c] = (counts[c] || 0) + 1; });
+      const parts = mealOptions.map(o => counts[o.name] ? `<span>${shortChoice(o.name)} <b>${counts[o.name]}</b></span>` : '').join('');
+      return `<div class="day-sum"><strong>${day.slice(0, 3)}</strong>${parts || '<span>—</span>'}</div>`;
+    }).join('');
+
+    if (filteredOrders.length === 0) {
+      container.innerHTML = `<div class="day-sums">${summary}</div><p class="empty-note">Nenhum pedido encontrado nesta seleção.</p>`;
+      return;
+    }
+    const cards = filteredOrders.map(doc => {
       const order = doc.data();
-      tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-slate-600 font-bold text-gray-800 dark:text-slate-200">${esc(order.employeeName)}</td><td class="py-2 px-3 border-b dark:border-slate-600 font-medium text-gray-600 dark:text-slate-400">${esc(order.employeeRGF || 'N/A')}</td>`;
-      weekDays.forEach(day => {
+      const days = weekDays.map(day => {
         const dayId = getDayId(day);
-        let choice = order[dayId] || 'N/A';
+        const choice = order[dayId];
         const notes = order[`${dayId}_notes`];
-        if (choice === 'FERIADO') {
-          tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 bg-gray-100 dark:bg-slate-800/50 text-gray-400 dark:text-slate-500 text-xs font-bold text-center">FERIADO</td>`;
-        } else {
-          let cellContent = esc(choice);
-          if (notes) cellContent += ` <span title="${esc(notes)}" class="cursor-help text-orange-500 font-bold">*</span>`;
-          tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 font-medium text-gray-700 dark:text-slate-300">${cellContent}</td>`;
-        }
-      });
-      tableHTML += `<td class="py-2 px-3 border-b dark:border-slate-600 space-x-2 whitespace-nowrap"><button data-id="${doc.id}" class="edit-order-btn text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 text-sm font-bold transition-colors">Editar</button><button data-id="${doc.id}" data-name="${esc(order.employeeName)}" class="delete-order-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
-    });
-    tableHTML += `</tbody></table>`;
-    container.innerHTML = tableHTML;
+        if (choice === 'FERIADO' || holidays.includes(dayId)) return `<span class="o-day holiday"><small>${day.slice(0, 3)}</small>Feriado</span>`;
+        if (!choice) return `<span class="o-day empty"><small>${day.slice(0, 3)}</small>—</span>`;
+        return `<span class="o-day"${notes ? ` title="${esc(notes)}"` : ''}><small>${day.slice(0, 3)}</small>${esc(shortChoice(choice))}${notes ? '<i>obs.</i>' : ''}</span>`;
+      }).join('');
+      const notesList = weekDays.map(day => {
+        const n = order[`${getDayId(day)}_notes`];
+        return n ? `<li><b>${day.slice(0, 3)}:</b> ${esc(n)}</li>` : '';
+      }).join('');
+      return `<div class="order-row">
+        <div class="order-row-head">
+          <div><strong>${esc(order.employeeName)}</strong><span>RGF ${esc(order.employeeRGF || '—')}</span></div>
+          <div class="order-row-actions">
+            <button type="button" data-id="${doc.id}" class="edit-order-btn btn-ghost">Editar</button>
+            <button type="button" data-id="${doc.id}" data-name="${esc(order.employeeName)}" class="delete-order-btn btn-ghost danger">Excluir</button>
+          </div>
+        </div>
+        <div class="o-days">${days}</div>
+        ${notesList ? `<ul class="o-notes">${notesList}</ul>` : ''}
+      </div>`;
+    }).join('');
+    container.innerHTML = `<div class="day-sums">${summary}</div><div class="order-rows">${cards}</div>`;
   }
 
   // ===== Status de pedidos (ja pediram / nao pediram) =====
@@ -315,7 +345,13 @@
       const haveNotOrdered = allEmployees.filter(emp => !orderedRGFs.has(emp.id));
       global.__adminStats = { done: haveOrdered.length, total: allEmployees.length, pending: haveNotOrdered.map(e => String(e.nome || '').split(/\s+/)[0]) };
       if (global.renderAdminHome) global.renderAdminHome();
-      let html = `<div><h3 class="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">Já pediram (${haveOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveOrdered.map(e => `<li class="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-md border border-emerald-100 dark:border-emerald-800/30">${esc(e.nome)}</li>`).join('') || '<li class="text-gray-500 font-medium">Ninguém fez pedido ainda.</li>'}</ul></div><div><h3 class="font-bold text-lg text-red-600 dark:text-red-400 mb-2">Ainda não pediram (${haveNotOrdered.length})</h3><ul class="space-y-1 text-sm font-semibold">${haveNotOrdered.map(e => `<li class="p-2 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-md border border-red-100 dark:border-red-800/30">${esc(e.nome)}</li>`).join('') || '<li class="text-gray-500 font-medium">Todos os funcionários fizeram pedido!</li>'}</ul></div>`;
+      const chips = (list, cls) => list.map(e => `<span class="name-chip ${cls}">${esc(e.nome)}</span>`).join('');
+      let html = `<div class="status-pills">
+          <div class="status-pill ok"><b>${haveOrdered.length}</b><span>já pediram</span></div>
+          <div class="status-pill ${haveNotOrdered.length ? 'warn' : 'ok'}"><b>${haveNotOrdered.length}</b><span>faltam</span></div>
+        </div>
+        ${haveNotOrdered.length ? `<p class="status-label">Ainda não pediram</p><div class="name-chips">${chips(haveNotOrdered, 'warn')}</div>` : '<p class="status-label">Todos os funcionários fizeram o pedido.</p>'}
+        ${haveOrdered.length ? `<details class="status-more"><summary>Ver quem já pediram (${haveOrdered.length})</summary><div class="name-chips">${chips(haveOrdered, 'ok')}</div></details>` : ''}`;
       container.innerHTML = html;
     } catch (error) { container.innerHTML = '<p class="text-red-500 font-bold">Falha ao carregar status.</p>'; }
   }

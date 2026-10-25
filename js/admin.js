@@ -105,7 +105,7 @@
     if (!auth.currentUser) return;
     if (st.adminUnsubscribe) st.adminUnsubscribe();
 
-    document.getElementById('status-section-title').textContent = st.adminViewingNextWeek ? "📊 Status de Pedidos (Próxima Semana)" : "📊 Status de Pedidos (Esta Semana)";
+    document.getElementById('status-section-title').textContent = st.adminViewingNextWeek ? "Quem já pediu · próxima semana" : "Quem já pediu · esta semana";
 
     st.adminUnsubscribe = fb.onSnapshot(fb.collection(db, "pedidosDaSemana"), (snapshot) => {
       const latestCurrentOrdersMap = new Map();
@@ -156,13 +156,19 @@
         container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4 font-medium">Nenhum funcionário cadastrado.</p>';
         return;
       }
-      let tableHTML = `<table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden"><thead><tr class="bg-gray-50 dark:bg-zinc-800/80"><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">RGF</th><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Nome</th><th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Ações</th></tr></thead><tbody>`;
+      // Um cartão por funcionário (iniciais, nome, RGF e ações)
+      const initials = (n) => String(n || '').trim().split(/\s+/).filter(Boolean).map((p, i, arr) => (i === 0 || i === arr.length - 1) ? p[0] : '').join('').toUpperCase();
+      let html = '';
       snapshot.forEach(doc => {
         const employee = doc.data();
-        tableHTML += `<tr><td class="py-2 px-3 border-b dark:border-zinc-800 font-mono font-medium text-gray-800 dark:text-gray-200">${esc(doc.id)}</td><td class="py-2 px-3 border-b dark:border-zinc-800 font-bold text-gray-800 dark:text-gray-200">${esc(employee.nome)}</td><td class="py-2 px-3 border-b dark:border-zinc-800 space-x-2"><button data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="edit-employee-btn text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-bold transition-colors">Editar</button><button data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="delete-employee-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-bold transition-colors">Excluir</button></td></tr>`;
+        html += `<div class="emp-row" data-search="${esc((doc.id + ' ' + employee.nome).toLowerCase())}">
+          <span class="identity-avatar">${esc(initials(employee.nome))}</span>
+          <span class="emp-info"><strong>${esc(employee.nome)}</strong><span>RGF ${esc(doc.id)}</span></span>
+          <button type="button" data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="edit-employee-btn btn-ghost">Editar</button>
+          <button type="button" data-id="${esc(doc.id)}" data-name="${esc(employee.nome)}" class="delete-employee-btn btn-ghost danger" aria-label="Excluir ${esc(employee.nome)}">Excluir</button>
+        </div>`;
       });
-      tableHTML += '</tbody></table>';
-      container.innerHTML = tableHTML;
+      container.innerHTML = `<p class="emp-count">${snapshot.size} funcionários cadastrados</p>` + html;
     } catch (error) {
       console.error("Erro:", error);
       container.innerHTML = `<p class="text-center text-red-500 font-bold">Falha ao carregar funcionários.</p>`;
@@ -232,6 +238,8 @@
 
   // ===== Relatorio publico (modal pre-visualizacao) =====
   async function openPublicReportModal() {
+    return openWeekPdf();
+    // (pré-visualização antiga em HTML mantida abaixo só como referência; não é mais usada)
     const st = S();
     if (!auth.currentUser) return;
     const container = document.getElementById('public-report-content');
@@ -280,6 +288,148 @@
     } catch (error) { container.innerHTML = '<p class="text-center text-red-500 font-bold py-10">Ocorreu um erro ao carregar o relatório.</p>'; }
   }
 
+  // ===== Monta o PDF oficial (o mesmo que o ADM manda ao encarregado) =====
+  // orders: dados dos pedidos (um por funcionário); holidays: ids dos dias de feriado
+  function buildReportDoc(orders, holidays) {
+    const { jsPDF } = window.jspdf;
+    let doc;
+    let fontSize = 9.5;
+    let cellPadding = 2;
+    let titleFontSize = 18;
+    let spaceBetweenTables = 4;
+
+    // Loop inteligente para escalonar os dados ate caberem em exatamente 1 pagina
+    while (fontSize >= 5) {
+      doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(titleFontSize);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Regional Quatinga", 105, 15, null, null, "center");
+
+      let currentY = 20;
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 10;
+      const tableWidth = pageWidth - (margin * 2);
+
+      weekDays.forEach(day => {
+        const dayId = getDayId(day);
+        if (holidays.includes(dayId)) return;
+        const dailyOrders = orders
+          .filter(order => order[dayId] && order[dayId] !== 'FERIADO')
+          .sort((a, b) => String(a.employeeName).localeCompare(String(b.employeeName)));
+        if (dailyOrders.length === 0) return;
+        const tableData = dailyOrders.map(order => {
+          let choice = (order[dayId] || '').toUpperCase();
+          const notes = order[`${dayId}_notes`];
+          let choiceHTML = choice;
+          if (choice === 'PRATO PRINCIPAL') choiceHTML = 'PRATO';
+          if (choice === 'OPÇÃO') choiceHTML = 'OPÇÃO';
+          if (notes) choiceHTML += ` (${notes})`;
+          return [order.employeeRGF || 'N/A', order.employeeName, choiceHTML];
+        });
+        const headRow = [
+          { content: 'RGF', styles: { fontStyle: 'bold' } },
+          { content: 'NOME', styles: { fontStyle: 'bold' } },
+          { content: day, styles: { fontStyle: 'bold' } }
+        ];
+        doc.autoTable({
+          startY: currentY,
+          head: [headRow],
+          body: tableData,
+          theme: 'plain',
+          headStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            lineColor: [153, 153, 153],
+            lineWidth: 0.2
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            fontStyle: 'normal',
+            lineColor: [153, 153, 153],
+            lineWidth: 0.2
+          },
+          styles: {
+            fontSize: fontSize,
+            cellPadding: cellPadding,
+            font: 'helvetica'
+          },
+          columnStyles: {
+            0: { cellWidth: tableWidth * 0.15 },
+            1: { cellWidth: tableWidth * 0.60 },
+            2: { cellWidth: tableWidth * 0.25 }
+          },
+          margin: { left: margin, right: margin },
+          tableWidth: 'wrap',
+          pageBreak: 'auto'
+        });
+        currentY = doc.lastAutoTable.finalY + spaceBetweenTables;
+      });
+
+      // Se o PDF gerado tem apenas 1 pagina, encontramos o tamanho ideal! Sai do loop.
+      if (doc.internal.getNumberOfPages() === 1) {
+        break;
+      }
+      // Se passou para a pagina 2, reduzimos ligeiramente os tamanhos e testamos novamente.
+      fontSize -= 0.5;
+      cellPadding = Math.max(0.5, cellPadding - 0.2);
+      titleFontSize = Math.max(14, titleFontSize - 1);
+      spaceBetweenTables = Math.max(1.5, spaceBetweenTables - 0.5);
+    }
+    return doc;
+  }
+
+  // Último pedido de cada funcionário da semana (atual ou próxima), já em ordem de nome
+  async function fetchLatestOrders(isNextWeek) {
+    const snapshot = await fb.getDocs(fb.query(fb.collection(db, "pedidosDaSemana"), fb.where("isNextWeek", "==", isNextWeek)));
+    const latest = new Map();
+    snapshot.forEach(d => {
+      const data = d.data();
+      if (!data.employeeRGF) return;
+      const t = data.timestamp ? fb.safeToMillis(data.timestamp) : 0;
+      if (!latest.has(data.employeeRGF) || t > latest.get(data.employeeRGF).t) latest.set(data.employeeRGF, { data, t });
+    });
+    return Array.from(latest.values()).map(x => x.data).sort((a, b) => String(a.employeeName).localeCompare(String(b.employeeName)));
+  }
+
+  // Funcionário: abre o PDF oficial da semana que está vendo (no app, no leitor de PDF;
+  // no site, em outra aba). Serve de prova para a cozinha, que só conhece o PDF.
+  async function openWeekPdf() {
+    const st = S();
+    const btn = document.getElementById('btn-view-public-report');
+    if (!auth.currentUser || !btn) return;
+    const label = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Gerando o PDF...';
+    try {
+      const orders = await fetchLatestOrders(!!st.viewingNextWeek);
+      if (!orders.length) { showToast('Ainda não há pedidos nesta semana.', 'info'); return; }
+      const holidays = st.viewingNextWeek ? (st.currentMenuData.nextHolidays || []) : (st.currentMenuData.holidays || []);
+      const blob = buildReportDoc(orders, holidays).output('blob');
+      const native = global.Capacitor?.isNativePlatform?.();
+      const { Filesystem, AppTheme } = global.Capacitor?.Plugins || {};
+      if (native && Filesystem && AppTheme && AppTheme.openPdf) {
+        await Filesystem.writeFile({ path: 'Cardapio-Quatinga.pdf', data: await blobToBase64(blob), directory: 'CACHE' });
+        try { await AppTheme.openPdf({ path: 'Cardapio-Quatinga.pdf' }); return; }
+        catch (e) { console.warn('[PDF] leitor indisponível, usando compartilhar:', e && e.message); }
+        await downloadAndShareViaCapacitor(blob, 'Cardápio Quatinga.pdf');
+        return;
+      }
+      if (native) { await downloadAndShareViaCapacitor(blob, 'Cardápio Quatinga.pdf'); return; }
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) downloadAndOpenPdf(blob, 'Cardápio Quatinga.pdf');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      console.error('[PDF] falhou:', err);
+      showToast('Não foi possível gerar o PDF.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = label;
+    }
+  }
+
   // ===== Gera PDF (jsPDF + autotable) e compartilha via WhatsApp/Web Share =====
   async function generateAndShareReport() {
     const st = S();
@@ -292,94 +442,8 @@
     btn.disabled = true;
     btn.innerHTML = "⏳ Processando PDF...";
     try {
-      const { jsPDF } = window.jspdf;
-      let doc;
-      let fontSize = 9.5;
-      let cellPadding = 2;
-      let titleFontSize = 18;
-      let spaceBetweenTables = 4;
-
-      // Loop inteligente para escalonar os dados ate caberem em exatamente 1 pagina
-      while (fontSize >= 5) {
-        doc = new jsPDF();
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(titleFontSize);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Regional Quatinga", 105, 15, null, null, "center");
-
-        let currentY = 20;
-        const printHolidays = st.adminViewingNextWeek ? (st.currentMenuData.nextHolidays || []) : (st.currentMenuData.holidays || []);
-        const pageWidth = doc.internal.pageSize.width;
-        const margin = 10;
-        const tableWidth = pageWidth - (margin * 2);
-
-        weekDays.forEach(day => {
-          const dayId = getDayId(day);
-          if (printHolidays.includes(dayId)) return;
-          const dailyOrders = st.allOrders
-            .filter(orderDoc => { const orderData = orderDoc.data(); return orderData[dayId] && orderData[dayId] !== 'FERIADO'; })
-            .sort((a, b) => a.data().employeeName.localeCompare(b.data().employeeName));
-          if (dailyOrders.length === 0) return;
-          const tableData = dailyOrders.map(orderDoc => {
-            const order = orderDoc.data();
-            let choice = (order[dayId] || '').toUpperCase();
-            const notes = order[`${dayId}_notes`];
-            let choiceHTML = choice;
-            if (choice === 'PRATO PRINCIPAL') choiceHTML = 'PRATO';
-            if (choice === 'OPÇÃO') choiceHTML = 'OPÇÃO';
-            if (notes) choiceHTML += ` (${notes})`;
-            return [order.employeeRGF || 'N/A', order.employeeName, choiceHTML];
-          });
-          const headRow = [
-            { content: 'RGF', styles: { fontStyle: 'bold' } },
-            { content: 'NOME', styles: { fontStyle: 'bold' } },
-            { content: day, styles: { fontStyle: 'bold' } }
-          ];
-          doc.autoTable({
-            startY: currentY,
-            head: [headRow],
-            body: tableData,
-            theme: 'plain',
-            headStyles: {
-              fillColor: [255, 255, 255],
-              textColor: [0, 0, 0],
-              lineColor: [153, 153, 153],
-              lineWidth: 0.2
-            },
-            bodyStyles: {
-              fillColor: [255, 255, 255],
-              textColor: [0, 0, 0],
-              fontStyle: 'normal',
-              lineColor: [153, 153, 153],
-              lineWidth: 0.2
-            },
-            styles: {
-              fontSize: fontSize,
-              cellPadding: cellPadding,
-              font: 'helvetica'
-            },
-            columnStyles: {
-              0: { cellWidth: tableWidth * 0.15 },
-              1: { cellWidth: tableWidth * 0.60 },
-              2: { cellWidth: tableWidth * 0.25 }
-            },
-            margin: { left: margin, right: margin },
-            tableWidth: 'wrap',
-            pageBreak: 'auto'
-          });
-          currentY = doc.lastAutoTable.finalY + spaceBetweenTables;
-        });
-
-        // Se o PDF gerado tem apenas 1 pagina, encontramos o tamanho ideal! Sai do loop.
-        if (doc.internal.getNumberOfPages() === 1) {
-          break;
-        }
-        // Se passou para a pagina 2, reduzimos ligeiramente os tamanhos e testamos novamente.
-        fontSize -= 0.5;
-        cellPadding = Math.max(0.5, cellPadding - 0.2);
-        titleFontSize = Math.max(14, titleFontSize - 1);
-        spaceBetweenTables = Math.max(1.5, spaceBetweenTables - 0.5);
-      }
+      const holidays = st.adminViewingNextWeek ? (st.currentMenuData.nextHolidays || []) : (st.currentMenuData.holidays || []);
+      const doc = buildReportDoc(st.allOrders.map(d => d.data()), holidays);
 
       const fileName = 'Cardápio Quatinga.pdf';
       const pdfBlob = doc.output('blob');
@@ -600,16 +664,8 @@
     searchInput.addEventListener('input', (e) => {
       const searchTerm = e.target.value.toLowerCase();
       const container = document.getElementById('employee-list-container');
-      const rows = container.querySelectorAll('tbody tr');
-      
-      rows.forEach(row => {
-        const rgf = row.cells[0].textContent.toLowerCase();
-        const nome = row.cells[1].textContent.toLowerCase();
-        if (rgf.includes(searchTerm) || nome.includes(searchTerm)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
+      container.querySelectorAll('.emp-row').forEach(row => {
+        row.style.display = row.dataset.search.includes(searchTerm) ? '' : 'none';
       });
     });
   }

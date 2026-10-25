@@ -400,7 +400,7 @@
                 }
             </style>
 <script src="js/menu-viewer.js?v=2026.16"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.24">
+    <link rel="stylesheet" href="css/theme.css?v=2026.25">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -435,18 +435,10 @@
                     <h1 id="home-hello">Olá!</h1>
                 </div>
 
-                <section id="home-hero" class="home-hero" aria-live="polite">
-                    <div class="hero-top">
-                        <span id="hero-kicker">Cardápio</span>
-                        <span id="hero-range" class="hero-chip hidden"></span>
-                    </div>
-                    <div class="hero-body">
-                        <h2 id="hero-title">Carregando cardápio...</h2>
-                        <p id="hero-text"></p>
-                    </div>
-                    <button type="button" id="hero-action" class="hero-btn hidden"><span id="hero-action-text">Fazer meu pedido</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
-                    <button type="button" id="week-badge-indicator" class="hero-switch hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"></path></svg><span id="week-badge-text"></span></button>
-                </section>
+                <div id="home-week" class="week-row">
+                    <span class="week-label"><span id="hero-kicker">Esta semana</span><span id="hero-range" class="week-range"></span></span>
+                    <button type="button" id="week-badge-indicator" class="chip-btn hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"></path></svg><span id="week-badge-text"></span></button>
+                </div>
 
                 <!-- Recado do encarregado -->
                 <div id="recado-caixa" class="hidden recado-card">
@@ -475,14 +467,6 @@
                 </section>
 
                 <div id="order-section" class="hidden scroll-mt-2">
-                    <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
-                        <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
-                            <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
-                        </div>
-                        <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
-                        <button type="button" id="menu-fullscreen-btn" class="menu-fullscreen-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>Ver em tela cheia</button>
-                    </div>
-
                     <div id="existing-order-container" class="hidden order-card done-card fade-in">
                         <div class="done-head">
                             <div class="done-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
@@ -493,6 +477,16 @@
                         </div>
                         <div id="existing-order-details" class="summary-list"></div>
                     </div>
+
+                    <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
+                        <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
+                            <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
+                        </div>
+                        <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
+                        <button type="button" id="menu-fullscreen-btn" class="menu-fullscreen-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>Ver em tela cheia</button>
+                    </div>
+
+
 
                     <!-- Pedido: chips dos dias, opções do dia, observação e barra de progresso -->
                     <div id="order-wizard-container" class="order-card">
@@ -523,12 +517,7 @@
                     </div>
                 </div>
 
-                <div id="publicReportButtonContainer" class="hidden mt-8 pt-6 border-t border-gray-200 dark:border-zinc-800 text-center fade-in">
-                    <button id="btn-view-public-report" class="text-blue-600 dark:text-blue-400 font-bold hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center justify-center gap-2 mx-auto transition-colors cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        Visualizar Relatório da Semana
-                    </button>
-                </div>
+
                 
                 <div id="guidanceSection" class="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-400 p-4 rounded-md mb-6 transition-colors"><p id="guidanceText" class="font-bold">Aguardando cardápio...</p></div>
 
@@ -555,6 +544,15 @@
                     </div>
                     <button type="button" id="home-push-enable" class="btn-primary push-enable hidden">Ativar</button>
                 </div>
+
+                <!-- PDF oficial da semana: o mesmo que o ADM manda ao encarregado (prova para a cozinha) -->
+                <div id="publicReportButtonContainer" class="hidden">
+                    <button type="button" id="btn-view-public-report" class="pdf-row">
+                        <span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>
+                        <span class="pdf-row-text"><strong>PDF oficial da semana</strong><span>O mesmo que vai para a cozinha. Mostre se o seu prato vier errado.</span></span>
+                        <svg class="pdf-row-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                    </button>
+                </div>
             </div>
             
             <div id="success-message" class="hidden success-card">
@@ -569,7 +567,6 @@
                 <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Feriados e Pontos Facultativos 2026</h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Calendário administrativo oficial de Mogi das Cruzes.</p>
                 <div id="user-holidays-list" class="space-y-1.5"></div>
-                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
             </section>
 
             <!-- ===== ABA PAGAMENTO (funcionário) ===== -->
@@ -578,7 +575,7 @@
                     <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Dias de Pagamento 2026</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Escala oficial de pagamento e adiantamento.</p>
                     <div id="user-next-payment" class="hidden rounded-xl p-4 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 text-center"></div>
-                    <div id="user-payment-table" class="space-y-1.5"></div>
+                    <div id="user-payment-table"></div>
                     <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
                 </div>
 
@@ -861,11 +858,11 @@
                                 </div>
                             </div>
                             
-                            <h4 class="font-bold text-sm text-gray-700 dark:text-gray-300 mb-2">Feriados da Próxima Semana</h4>
+                            
                             <!-- APRIMORAMENTO: Mini-calendário interativo para feriados -->
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center mb-2">
-                                    <span class="font-medium text-gray-700 dark:text-gray-300">Feriados da Próxima Semana</span>
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">Feriados (toque no dia)</span>
                                     <div class="flex gap-2">
                                         <button type="button" id="selectWeekdays" class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">Dias Úteis</button>
                                         <button type="button" id="clearHolidaysBtn" class="px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs rounded hover:bg-gray-200 dark:hover:bg-zinc-700">Limpar</button>
@@ -931,31 +928,29 @@
             
             <!-- Resumo de Status (pertence ao painel de Pedidos) -->
             <section id="order-status-section" data-admin-panel="orders" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4" id="status-section-title">Status de Pedidos</h2>
-                <div id="order-status-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4" id="status-section-title">Quem já pediu</h2>
+                <div id="order-status-container" class="order-status">
                     <p class="text-gray-500 dark:text-gray-400 font-medium">A carregar status dos pedidos...</p>
                 </div>
             </section>
 
             <!-- Gerenciamento de Funcionários -->
             <section id="employee-management-section" data-admin-panel="employees" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Gerenciamento de Funcionários</h2>
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Funcionários</h2>
                 <!-- APRIMORAMENTO: Lista de funcionários com busca e ações em lote -->
                 <div class="mb-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300">Funcionários Cadastrados</h3>
-                        <button id="toggleAddEmployeeForm" class="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">+ Adicionar</button>
+                        <input type="text" id="employeeSearch" placeholder="Buscar por nome ou RGF" class="emp-search">
+                        <button type="button" id="toggleAddEmployeeForm" class="btn-primary emp-add">+ Adicionar</button>
                     </div>
-                    <div class="mt-2">
-                        <input type="text" id="employeeSearch" placeholder="🔍 Buscar por nome ou RGF..." class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                    </div>
+
                     <div id="employee-list-container" class="mt-3 space-y-2">
                         <p class="text-gray-500 dark:text-gray-400 font-medium">A carregar lista de funcionários...</p>
                     </div>
                 </div>
                 
                 <!-- Formulário de adição (inicialmente oculto) -->
-                <form id="add-employee-form" class="hidden grid sm:grid-cols-3 gap-4 items-end mb-6">
+                <form id="add-employee-form" class="hidden emp-form">
                     <div>
                         <label for="newEmployeeRGF" class="block text-sm font-bold text-gray-700 dark:text-gray-300">RGF</label>
                         <input type="text" id="newEmployeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="RGF do funcionário" class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg transition-colors font-medium" required>
@@ -1022,40 +1017,50 @@
                 </div>
 
                 <!-- Inteligência artificial do cardápio digitado -->
-                <div id="dev-block-ai" class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Inteligência artificial</h3>
-                        <button id="ai-config-refresh" type="button" class="px-3 py-1 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 cursor-pointer">Atualizar</button>
+                <div id="dev-block-ai" class="ai-panel">
+                    <h3>Inteligência artificial</h3>
+                    <div id="ai-config-status" class="ai-status">Carregando...</div>
+
+                    <p class="ai-section">Ordem de tentativa</p>
+                    <div id="ai-order" class="seg seg-wrap" role="group" aria-label="Ordem de tentativa">
+                        <button type="button" data-order="gemini_first">Gemini, depois Cloudflare</button>
+                        <button type="button" data-order="cloudflare_first">Cloudflare, depois Gemini</button>
+                        <button type="button" data-order="gemini">Só Gemini</button>
+                        <button type="button" data-order="cloudflare">Só Cloudflare</button>
                     </div>
-                    <div id="ai-config-status" class="text-sm text-gray-600 dark:text-gray-300 mb-3">Toque em Atualizar.</div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Opcional: se a IA da Cloudflare falhar, o app tenta o Gemini. Crie uma chave grátis em aistudio.google.com/apikey (sem cartão) e cole abaixo. Ela fica guardada criptografada e só aparece o final.</p>
-                    <form id="ai-key-form" class="flex flex-wrap gap-2">
-                        <input id="ai-key-input" type="password" autocomplete="off" placeholder="Chave do Gemini" class="flex-1 min-w-0 basis-48 px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-100">
-                        <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg cursor-pointer">Salvar chave</button>
-                        <button type="button" id="ai-key-clear" class="hidden px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-bold rounded-lg cursor-pointer">Apagar</button>
+
+                    <div class="ai-models">
+                        <label>Modelo do Gemini
+                            <select id="ai-gemini-model"><option value="auto">Automático (recomendado)</option></select>
+                        </label>
+                        <label>Modelo da Cloudflare
+                            <select id="ai-cf-model"><option value="auto">Automático</option></select>
+                        </label>
+                    </div>
+                    <div class="ai-actions">
+                        <button type="button" id="ai-prefs-save" class="btn-primary">Salvar escolhas</button>
+                        <button type="button" id="ai-test" class="btn-secondary">Testar com o cardápio atual</button>
+                    </div>
+                    <div id="ai-test-result" class="ai-test-result hidden"></div>
+
+                    <p class="ai-section">Chave do Gemini</p>
+                    <p class="ai-help">Grátis em aistudio.google.com/apikey (sem cartão). Fica guardada criptografada; só aparece o final.</p>
+                    <form id="ai-key-form" class="ai-key-form">
+                        <input id="ai-key-input" type="password" autocomplete="off" placeholder="Cole a chave aqui">
+                        <button type="submit" class="btn-primary">Salvar chave</button>
+                        <button type="button" id="ai-key-clear" class="btn-ghost danger hidden">Apagar</button>
                     </form>
+                    <button id="ai-config-refresh" type="button" class="hidden">Atualizar</button>
                 </div>
                 </div>
 
-                <div class="mb-6">
-                    <button id="dev-check-update" type="button" class="w-full px-4 py-2 bg-emerald-600 dark:bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer">
-                        ⬆️ Verificar atualização do app
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <button id="dev-clear-logs" class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white font-bold rounded-lg hover:bg-red-700 dark:hover:bg-red-400 transition-colors cursor-pointer">
-                        🗑️ Limpar Logs
-                    </button>
-                    <button id="dev-export-logs" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-colors cursor-pointer">
-                        📥 Exportar Logs
-                    </button>
-                    <button id="dev-clear-cache" class="px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-700 dark:hover:bg-orange-400 transition-colors cursor-pointer">
-                        🔄 Limpar Cache SW
-                    </button>
-                    <button id="dev-test-pdf-share" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-400 transition-colors cursor-pointer md:col-span-2">
-                        🧪 Testar PDF Share (Debug)
-                    </button>
+                <p class="tools-title">Ferramentas</p>
+                <div class="tool-grid">
+                    <button type="button" id="dev-check-update" class="tool-tile"><span class="mini-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M5 19h14"></path></svg></span><span class="tool-text"><strong>Procurar atualização</strong><span>baixa a versão nova do app</span></span></button>
+                    <button type="button" id="dev-test-pdf-share" class="tool-tile"><span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 14h6M9 17h4"></path></svg></span><span class="tool-text"><strong>Testar PDF</strong><span>gera e compartilha um PDF</span></span></button>
+                    <button type="button" id="dev-export-logs" class="tool-tile"><span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 13v6h14v-6"></path></svg></span><span class="tool-text"><strong>Exportar registros</strong><span>salva os logs em arquivo</span></span></button>
+                    <button type="button" id="dev-clear-cache" class="tool-tile"><span class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"></path></svg></span><span class="tool-text"><strong>Limpar cache</strong><span>recarrega os arquivos do site</span></span></button>
+                    <button type="button" id="dev-clear-logs" class="tool-tile"><span class="mini-icon danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></span><span class="tool-text"><strong>Apagar registros</strong><span>limpa a lista abaixo</span></span></button>
                 </div>
 
                 <div class="flex items-center justify-between mb-2 text-sm text-gray-600 dark:text-gray-400">
@@ -1072,7 +1077,7 @@
             <!-- Tabela de Pedidos -->
             <section id="orders-section" data-admin-panel="orders">
                 <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b dark:border-zinc-800 pb-4 transition-colors">
-                    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">Pedidos Recebidos</h2>
+                    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">Pedidos</h2>
                     <div class="flex space-x-2 bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg border border-gray-200 dark:border-zinc-800">
                         <button id="admin-view-current" class="px-4 py-1.5 bg-white dark:bg-zinc-800 shadow-sm rounded-md text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors cursor-pointer">Esta Semana</button>
                         <button id="admin-view-next" class="px-4 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md text-sm font-semibold transition-colors cursor-pointer">Próxima Semana</button>
@@ -1080,14 +1085,11 @@
                 </div>
                 <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="w-full sm:w-auto">
-                        <input type="text" id="searchInput" placeholder="🔎 Buscar por nome..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors">
+                        <input type="text" id="searchInput" placeholder="Buscar por nome" class="w-full sm:w-64 px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors">
                     </div>
-                    <!-- APRIMORAMENTO: Botão de PDF mais proeminente como FAB (acima da bottom bar) -->
-                    <button id="generateReportBtn" class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-transform transform active:scale-95 z-[999] flex items-center justify-center" title="Gerar PDF">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
-                    </button>
+                    <button type="button" id="generateReportBtn" class="btn-primary pdf-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M12 18v-6M9 15l3 3 3-3"></path></svg>Gerar PDF e enviar</button>
                 </div>
-                <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
+                <div id="ordersTableContainer"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
             </section>
         </div>
     </div>
@@ -1374,19 +1376,19 @@
     <script src="js/firebase.js?v=2026.1"></script>
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.23"></script>
+    <script src="js/ui.js?v=2026.24"></script>
     <script src="js/order.js?v=2026.20"></script>
-    <script src="js/userhelp.js?v=2026.17"></script>
-    <script src="js/home.js?v=2026.2"></script>
-    <script src="js/admin.js?v=2026.22"></script>
+    <script src="js/userhelp.js?v=2026.18"></script>
+    <script src="js/home.js?v=2026.3"></script>
+    <script src="js/admin.js?v=2026.23"></script>
     <script src="js/financas.js?v=2026.11"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.14"></script>
     <script src="js/pushRegistration.js?v=2026.15"></script>
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
-    <script src="js/menuText.js?v=2026.2"></script>
-    <script src="js/adminHome.js?v=2026.1"></script>
+    <script src="js/menuText.js?v=2026.3"></script>
+    <script src="js/adminHome.js?v=2026.2"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
     <script src="js/app.js?v=2026.19"></script>
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">

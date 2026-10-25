@@ -59,7 +59,7 @@
 
   function renderHome() {
     const st = S();
-    if (!st || !$('home-hero')) return;
+    if (!st || !$('home-week')) return;
     const now = new Date();
     $('home-date').textContent = `${DIAS[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]}`;
 
@@ -79,41 +79,17 @@
       $('identity-rgf').textContent = `RGF ${rgf}`;
     }
 
-    // Cartão de destaque
+    // Linha da semana (o cartão azul grande saiu: o pedido já fica à vista)
     const hasMenu = !!(st.weeklyMenu && st.weeklyMenu.menuImageBase64);
-    const ordered = isVisible('existing-order-container') && isVisible('order-section');
     const hasNext = !!(st.currentMenuData && st.currentMenuData.nextMenuImageBase64);
-    let title, text = '', action = null;
     $('hero-kicker').textContent = st.viewingNextWeek ? 'Próxima semana' : 'Esta semana';
-    $('hero-range').textContent = weekRangeShort();
-    $('hero-range').classList.toggle('hidden', !hasMenu);
-    if (!identified) {
-      title = 'Digite seu RGF para começar';
-      text = 'Ele fica salvo neste celular.';
-      action = { label: 'Digitar RGF', go: () => { $('employeeRGF').focus(); } };
-    } else if (!hasMenu) {
-      title = 'O cardápio ainda não saiu';
-      text = 'Você recebe um aviso quando ele for lançado.';
-    } else if (ordered) {
-      title = 'Seu pedido está feito';
-      text = 'Toque para ver suas escolhas.';
-      action = { label: 'Ver meu pedido', go: () => scrollToEl('existing-order-container') };
-    } else {
-      title = st.viewingNextWeek ? 'O cardápio da próxima semana saiu' : 'Faça seu pedido da semana';
-      text = ['Escolha seus pratos para cada dia.', holidaySentence()].filter(Boolean).join(' ');
-      action = { label: 'Fazer meu pedido', go: () => scrollToEl('menu-image-container') };
-    }
-    $('hero-title').textContent = title;
-    $('hero-text').textContent = text;
-    $('hero-text').classList.toggle('hidden', !text);
-    const btn = $('hero-action');
-    btn.classList.toggle('hidden', !action);
-    if (action) { $('hero-action-text').textContent = action.label; btn.onclick = action.go; }
+    $('hero-range').textContent = hasMenu ? weekRangeShort() : '';
+    $('home-week').classList.toggle('hidden', !identified);
 
     // Trocar de semana (o clique continua no handler do app.js)
     const sw = $('week-badge-indicator');
     sw.classList.toggle('hidden', !(identified && (hasNext || st.viewingNextWeek)));
-    $('week-badge-text').textContent = st.viewingNextWeek ? 'Ver a semana atual' : 'Ver a próxima semana';
+    $('week-badge-text').textContent = st.viewingNextWeek ? 'Semana atual' : 'Próxima semana';
 
     // Atalhos
     const feriado = global.getNextHoliday ? global.getNextHoliday() : null;
