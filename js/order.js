@@ -70,16 +70,20 @@
       const publicReportBtnContainer = document.getElementById('publicReportButtonContainer');
       let latestOrder = null;
       let latestTime = 0;
+      // Pedido da semana atual, mesmo vendo a próxima: alimenta a caixa "Hoje o seu almoço é"
+      let currentOrder = null;
+      let currentTime = 0;
       if (!snapshot.empty) {
         snapshot.forEach(doc => {
           const data = doc.data();
           const isNext = !!data.isNextWeek;
-          if (isNext === st.viewingNextWeek) {
-            const time = data.timestamp ? fb.safeToMillis(data.timestamp) : 0;
-            if (time >= latestTime) { latestTime = time; latestOrder = data; }
-          }
+          const time = data.timestamp ? fb.safeToMillis(data.timestamp) : 0;
+          if (isNext === st.viewingNextWeek && time >= latestTime) { latestTime = time; latestOrder = data; }
+          if (!isNext && time >= currentTime) { currentTime = time; currentOrder = data; }
         });
       }
+      st.todayOrder = currentOrder;
+      if (global.renderToday) global.renderToday();
       if (latestOrder) {
         displayExistingOrder(latestOrder);
         wizardContainer.classList.add('hidden');

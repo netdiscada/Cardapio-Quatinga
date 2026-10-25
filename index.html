@@ -399,8 +399,8 @@
                     background: rgba(255,255,255,0.25) !important;
                 }
             </style>
-<script src="js/menu-viewer.js?v=2026.16"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.26">
+<script src="js/menu-viewer.js?v=2026.17"></script>
+    <link rel="stylesheet" href="css/theme.css?v=2026.27">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -464,6 +464,22 @@
                         <input type="tel" id="employeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" placeholder="Digite o seu RGF" class="identity-input">
                         <input type="text" id="employeeName" placeholder="O seu nome aparece aqui" class="identity-name-input" readonly aria-label="Nome">
                     </div>
+                </section>
+
+                <!-- Almoço de hoje: prato escolhido pelo funcionário (ou a foto, se o cardápio não foi digitado) -->
+                <section id="today-lunch" class="today-card hidden" aria-live="polite">
+                    <div class="today-head">
+                        <span class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"></path><path d="M17 21V3c-2 1.5-3 4-3 7h3"></path></svg></span>
+                        <div class="today-text">
+                            <span id="today-kicker" class="today-kicker"></span>
+                            <strong id="today-dish" class="today-dish"></strong>
+                            <span id="today-sub" class="today-sub"></span>
+                        </div>
+                    </div>
+                    <button type="button" id="today-photo-btn" class="today-photo hidden" aria-label="Ampliar a foto do cardápio">
+                        <img id="today-photo" alt="Foto do cardápio desta semana">
+                        <span>Toque para ampliar</span>
+                    </button>
                 </section>
 
                 <div id="order-section" class="hidden scroll-mt-2">
@@ -1377,11 +1393,11 @@
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
     <script src="js/ui.js?v=2026.24"></script>
-    <script src="js/order.js?v=2026.21"></script>
+    <script src="js/order.js?v=2026.22"></script>
     <script src="js/userhelp.js?v=2026.18"></script>
-    <script src="js/home.js?v=2026.3"></script>
+    <script src="js/home.js?v=2026.4"></script>
     <script src="js/admin.js?v=2026.24"></script>
-    <script src="js/financas.js?v=2026.12"></script>
+    <script src="js/financas.js?v=2026.13"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.15"></script>
     <script src="js/pushRegistration.js?v=2026.15"></script>

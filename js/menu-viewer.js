@@ -22,13 +22,15 @@ const MENU_VIEWER = {
 };
 
 /* ====== ABRIR / FECHAR ====== */
-function menuViewerOpen() {
+// src opcional: abre outra imagem (ex.: foto do dia na caixa "Hoje" do Início)
+function menuViewerOpen(src) {
     const img = document.getElementById('menu-image');
     const modal = document.getElementById('menu-viewer-modal');
     const viewerImg = document.getElementById('menu-viewer-img');
-    if (!img || !modal || !viewerImg || !img.src || img.src === window.location.href) return;
+    const url = typeof src === 'string' ? src : (img && img.src);
+    if (!modal || !viewerImg || !url || url === window.location.href) return;
 
-    viewerImg.src = img.src;
+    viewerImg.src = url;
     MENU_VIEWER.scale = 1;
     MENU_VIEWER.posX = 0;
     MENU_VIEWER.posY = 0;

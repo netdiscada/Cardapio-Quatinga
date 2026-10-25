@@ -120,6 +120,55 @@
         : 'Libere as notificações nas configurações do celular para saber quando o cardápio sair.';
       $('home-push-enable').classList.toggle('hidden', !canAsk);
     }
+    renderToday();
+  }
+
+  // "Hoje o seu almoço é...": dia útil da semana atual, com pedido do RGF identificado
+  function renderToday() {
+    const st = S();
+    const box = $('today-lunch');
+    if (!st || !box) return;
+    const rgf = ($('employeeRGF').value || '').trim();
+    const order = st.todayOrder;
+    const now = new Date();
+    const dow = now.getDay();
+    const cd = st.currentMenuData || {};
+    const cal = global.__weekCalendar;
+    const sameWeek = !cd.weekMonday || !cal || cal.mondayOf(now).getTime() === cal.mondayOf(new Date(cd.weekMonday)).getTime();
+    const day = global.weekDays[dow - 1];
+    const dayId = day ? global.getDayId(day) : '';
+    const choice = order && dayId ? order[dayId] : '';
+    if (!order || order.employeeRGF !== rgf || dow < 1 || dow > 5 || !sameWeek || !choice) {
+      box.classList.add('hidden');
+      return;
+    }
+    const holiday = choice === 'FERIADO' || (cd.holidays || []).includes(dayId);
+    const mt = (cd.menuText || {})[dayId];
+    const field = { 'Prato Principal': 'principal', 'Opção': 'opcao' }[choice];
+    const dish = field && mt && typeof mt === 'object' ? (mt[field] || '') : '';
+    const notes = order[dayId + '_notes'] || '';
+    const dayName = day.replace('-feira', '');
+    // Escolheu Prato Principal/Opção mas o cardápio não foi digitado: mostra a foto
+    const needsPhoto = !holiday && field && !dish && !!cd.menuImageBase64;
+
+    box.classList.toggle('holiday', holiday);
+    $('today-kicker').textContent = holiday ? `${dayName} · hoje` : `${dayName} · hoje o seu almoço é`;
+    if (holiday) {
+      const info = global.isHolidayDate ? global.isHolidayDate(now) : null;
+      $('today-dish').textContent = 'Hoje é feriado';
+      $('today-sub').textContent = info && info.isHoliday ? info.evento : 'Bom descanso!';
+    } else {
+      $('today-dish').textContent = dish || choice;
+      const parts = [];
+      if (dish && mt.guarnicao) parts.push('com ' + mt.guarnicao);
+      if (dish) parts.push(choice);
+      if (needsPhoto) parts.push('Veja o prato do dia na foto');
+      if (notes) parts.push('Obs.: ' + notes);
+      $('today-sub').textContent = parts.join(' · ');
+    }
+    $('today-photo-btn').classList.toggle('hidden', !needsPhoto);
+    if (needsPhoto && $('today-photo').src !== cd.menuImageBase64) $('today-photo').src = cd.menuImageBase64;
+    box.classList.remove('hidden');
   }
 
   function scrollToEl(id) {
@@ -144,6 +193,10 @@
       }, 600);
     });
     $('home-push-enable')?.addEventListener('click', () => { if (global.enableWebPush) global.enableWebPush(); });
+    $('today-photo-btn')?.addEventListener('click', () => {
+      const src = $('today-photo').src;
+      if (src && typeof global.menuViewerOpen === 'function') global.menuViewerOpen(src);
+    });
     // Trocar de aba volta ao topo da tela
     document.getElementById('user-tabs')?.addEventListener('click', (e) => {
       if (e.target.closest('.admin-tab-btn')) window.scrollTo(0, 0);
@@ -158,6 +211,7 @@
   }
 
   global.renderHome = renderHome;
+  global.renderToday = renderToday;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindHome);
   else bindHome();
 })(window);

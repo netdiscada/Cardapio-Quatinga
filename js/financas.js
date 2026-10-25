@@ -51,8 +51,11 @@
   function finDb() { return finApp().firestore(); }
   function finAuth() { return finApp().auth(); }
 
+  // Espera o Firebase restaurar a sessão salva (logo após abrir a página currentUser ainda é null)
   async function finRgfLogado() {
-    const u = finAuth().currentUser;
+    const a = finAuth();
+    await new Promise(resolve => { const off = a.onAuthStateChanged(() => { off(); resolve(); }); });
+    const u = a.currentUser;
     if (!u) return null;
     try { return (await u.getIdTokenResult()).claims.finRgf || null; } catch (e) { return null; }
   }
@@ -762,6 +765,8 @@
     const sec = document.getElementById('user-financas-section');
     if (!sec) return;
     try { Object.keys(localStorage).filter(k => k.startsWith('fin_senha_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* sem storage */ }
+    // Sessão lembrada neste aparelho: a aba já abre no painel, sem pedir RGF e senha
+    finRgfLogado().then(rgf => { if (rgf && !F.autenticado) entrar(rgf); }).catch(() => {});
 
     document.getElementById('fin-identificar-form').addEventListener('submit', handleIdentificar);
     document.getElementById('fin-login-form').addEventListener('submit', handleLogin);
