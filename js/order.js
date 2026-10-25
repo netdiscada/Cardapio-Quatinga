@@ -102,6 +102,14 @@
         st.dayNotes = {};
       }
       renderWizardStep(st.currentDayIndex);
+      // Tem pedido para fazer: a tela de pedido (foto grande + escolha) abre sozinha,
+      // uma vez por RGF e semana; "Voltar" leva à tela normal
+      const autoKey = rgf + '|' + (st.viewingNextWeek ? 'next' : 'cur');
+      const homeVisible = document.getElementById('form-container')?.offsetParent !== null;
+      if (st.orderScreenAutoKey !== autoKey && homeVisible && st.weeklyMenu.menuImageBase64 && typeof menuViewerOpen === 'function') {
+        st.orderScreenAutoKey = autoKey;
+        if (!(typeof MENU_VIEWER !== 'undefined' && MENU_VIEWER.isOpen)) menuViewerOpen();
+      }
     } catch (error) { console.error(error); }
   }
 
@@ -206,7 +214,8 @@
   function openConfirmationModal() {
     const st = S();
     // Finalizado de dentro do zoom: fecha o visualizador, senão a confirmação abre por trás dele
-    if (typeof MENU_VIEWER !== 'undefined' && MENU_VIEWER.isOpen && typeof menuViewerClose === 'function') menuViewerClose();
+    st.reviewFromOrderScreen = typeof MENU_VIEWER !== 'undefined' && MENU_VIEWER.isOpen;
+    if (st.reviewFromOrderScreen && typeof menuViewerClose === 'function') menuViewerClose();
     st.tempOrderData = {
       employeeName: document.getElementById('employeeName').value.trim(),
       employeeRGF: document.getElementById('employeeRGF').value.trim(),

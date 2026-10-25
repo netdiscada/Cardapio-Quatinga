@@ -42,14 +42,32 @@ function menuViewerOpen(src) {
     // Move o pedido (dias, opções e botão de revisar) pra dentro do viewer (fixo embaixo)
     const wizardHost = document.getElementById('menu-viewer-buttons');
     const wizard = document.getElementById('order-wizard-container');
-    if (wizardHost && wizard) wizardHost.appendChild(wizard);
+    if (wizardHost && wizard && typeof src !== 'string') wizardHost.appendChild(wizard);
+
+    // Título: pedido em andamento mostra a semana; só a foto, "Cardápio"
+    const ordering = wizard && !wizard.classList.contains('hidden') && typeof src !== 'string';
+    const title = document.getElementById('viewer-title');
+    if (title) title.textContent = ordering && window.getWeekRangeText ? 'Seu pedido · ' + window.getWeekRangeText() : 'Cardápio';
+
+    // Botão voltar do celular/navegador fecha esta tela em vez de sair do site
+    const pushEntry = () => {
+        if (!MENU_VIEWER.isOpen || (history.state && history.state.menuViewer)) return;
+        try { history.pushState({ menuViewer: true }, ''); } catch (e) { /* sem history */ }
+    };
+    // O Chrome pula, no "voltar", entradas criadas sem toque do usuário (e sairia do site):
+    // aberta sozinha, a entrada só é criada no primeiro toque dentro da tela
+    if (navigator.userActivation && !navigator.userActivation.isActive) modal.addEventListener('pointerdown', pushEntry, { once: true });
+    else pushEntry();
 }
 
-function menuViewerClose() {
+function menuViewerClose(fromHistory) {
     const modal = document.getElementById('menu-viewer-modal');
     if (!modal) return;
+    const wasOpen = MENU_VIEWER.isOpen;
     modal.classList.add('hidden');
     MENU_VIEWER.isOpen = false;
+    // Fechou pelo botão: tira a entrada que o open colocou no histórico
+    if (wasOpen && fromHistory !== true && history.state && history.state.menuViewer) history.back();
 
     // Devolve o pedido pro lugar original (no fim da order-section, após o pedido existente)
     const orderSection = document.getElementById('order-section');
@@ -212,7 +230,8 @@ function menuViewerBindEvents() {
     document.getElementById('viewer-zoom-in')?.addEventListener('click', () => menuViewerZoomBy(0.5));
     document.getElementById('viewer-zoom-out')?.addEventListener('click', () => menuViewerZoomBy(-0.5));
     document.getElementById('viewer-reset')?.addEventListener('click', menuViewerReset);
-    document.getElementById('viewer-close-btn')?.addEventListener('click', menuViewerClose);
+    document.getElementById('viewer-close-btn')?.addEventListener('click', () => menuViewerClose());
+    window.addEventListener('popstate', () => { if (MENU_VIEWER.isOpen) menuViewerClose(true); });
     document.getElementById('menu-viewer-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'menu-viewer-modal') menuViewerClose();
     });

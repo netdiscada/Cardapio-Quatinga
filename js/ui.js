@@ -168,6 +168,13 @@
 
     const notesInput = document.getElementById('wizard-notes');
     notesInput.value = st.dayNotes[index] || (current && current.choice !== 'FERIADO' ? current.notes || '' : '');
+    // Observação fica recolhida; o botão mostra "Obs. ✓" quando o dia já tem uma
+    const notesToggle = document.getElementById('wizard-notes-toggle');
+    document.getElementById('order-wizard').classList.remove('notes-open');
+    notesToggle.classList.toggle('hidden', isHoliday);
+    notesToggle.classList.toggle('has-note', !!notesInput.value);
+    notesToggle.textContent = notesInput.value ? 'Obs. ✓' : '+ Obs.';
+    notesToggle.setAttribute('aria-expanded', 'false');
     updateWizardProgress();
   }
 
@@ -178,7 +185,7 @@
     const complete = findPendingDay(st, weekDays.length - 1) === -1;
     document.getElementById('wizard-progress-text').textContent = workDays === 0
       ? 'Semana sem almoço (feriados)'
-      : (complete ? 'Todos os dias escolhidos' : `${done} de ${workDays} dias escolhidos`);
+      : (complete ? 'Tudo escolhido' : `${done} de ${workDays} dias`);
     document.getElementById('wizard-progress-fill').style.width = `${workDays ? Math.round(done / workDays * 100) : 100}%`;
     const nextBtn = document.getElementById('wizard-next');
     nextBtn.classList.toggle('ready', complete);

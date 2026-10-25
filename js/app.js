@@ -405,18 +405,34 @@
     document.getElementById('wizard-days')?.addEventListener('click', global.handleWizardDayChip);
     document.getElementById('wizard-next')?.addEventListener('click', global.handleWizardNext);
     document.getElementById('wizard-notes')?.addEventListener('input', global.handleWizardNotes);
+    document.getElementById('wizard-notes-toggle')?.addEventListener('click', (e) => {
+      const wizard = document.getElementById('order-wizard');
+      const open = wizard.classList.toggle('notes-open');
+      e.currentTarget.setAttribute('aria-expanded', String(open));
+      if (open) document.getElementById('wizard-notes').focus();
+    });
+    document.getElementById('wizard-notes')?.addEventListener('input', (e) => {
+      const t = document.getElementById('wizard-notes-toggle');
+      t.classList.toggle('has-note', !!e.target.value.trim());
+      t.textContent = e.target.value.trim() ? 'Obs. ✓' : '+ Obs.';
+    });
     const submitOrderBtn = document.getElementById('submitOrder');
     if (submitOrderBtn) submitOrderBtn.addEventListener('click', submitOrder);
 
     const btnEditWizard = document.getElementById('btn-edit-wizard');
     // Editar mantém as escolhas: só fecha a revisão e volta ao primeiro dia
+    // Se a revisão veio da tela de pedido (foto grande), volta para ela
+    const backToOrderScreen = () => {
+      if (global.__state.reviewFromOrderScreen && typeof menuViewerOpen === 'function') menuViewerOpen();
+    };
     if (btnEditWizard) btnEditWizard.addEventListener('click', () => {
       document.getElementById('confirmation-modal').classList.add('hidden');
       renderWizardStep(0);
+      backToOrderScreen();
     });
     // Tocar fora da bandeja de revisão fecha (igual a Editar)
     document.getElementById('confirmation-modal')?.addEventListener('click', (e) => {
-      if (e.target.id === 'confirmation-modal') e.currentTarget.classList.add('hidden');
+      if (e.target.id === 'confirmation-modal') { e.currentTarget.classList.add('hidden'); backToOrderScreen(); }
     });
 
     const btnViewPublicReport = document.getElementById('btn-view-public-report');
