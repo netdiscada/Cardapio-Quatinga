@@ -399,19 +399,21 @@
 
     const wizardOptions = document.getElementById('wizard-options');
     if (wizardOptions) wizardOptions.addEventListener('click', handleWizardSelection);
-    const openConfirmationModalBtn = document.getElementById('openConfirmationModal');
-    if (openConfirmationModalBtn) openConfirmationModalBtn.addEventListener('click', global.openConfirmationModal);
+    document.getElementById('wizard-days')?.addEventListener('click', global.handleWizardDayChip);
+    document.getElementById('wizard-next')?.addEventListener('click', global.handleWizardNext);
+    document.getElementById('wizard-notes')?.addEventListener('input', global.handleWizardNotes);
     const submitOrderBtn = document.getElementById('submitOrder');
     if (submitOrderBtn) submitOrderBtn.addEventListener('click', submitOrder);
 
     const btnEditWizard = document.getElementById('btn-edit-wizard');
+    // Editar mantém as escolhas: só fecha a revisão e volta ao primeiro dia
     if (btnEditWizard) btnEditWizard.addEventListener('click', () => {
       document.getElementById('confirmation-modal').classList.add('hidden');
-      global.__state.currentDayIndex = 0;
-      global.__state.userChoices = [];
-      document.getElementById('submitButtonContainer').classList.add('hidden');
-      document.getElementById('order-wizard-container').classList.remove('hidden');
       renderWizardStep(0);
+    });
+    // Tocar fora da bandeja de revisão fecha (igual a Editar)
+    document.getElementById('confirmation-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'confirmation-modal') e.currentTarget.classList.add('hidden');
     });
 
     const btnViewPublicReport = document.getElementById('btn-view-public-report');
@@ -492,6 +494,7 @@
     // v3.3: abre o visualizador fullscreen (pinch-zoom + botões fixos)
     const menuImage = document.getElementById('menu-image');
     menuImage.addEventListener('click', () => { if (typeof menuViewerOpen === 'function') menuViewerOpen(); });
+    document.getElementById('menu-fullscreen-btn')?.addEventListener('click', () => { if (typeof menuViewerOpen === 'function') menuViewerOpen(); });
 
     // ===== v3: init userhelp ANTES dos handlers do calendario (precisa de isHolidayDate) ====
     if (global.initUserHelp) global.initUserHelp();

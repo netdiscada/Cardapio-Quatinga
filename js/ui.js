@@ -60,44 +60,130 @@
   global.addEventListener('themechange', updateDarkModeButton);
 
   // ===== Wizard do funcionario =====
+  // ===== Pedido: chips dos dias + opções do dia =====
+  const SHORT_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+  const OPTION_ICONS = [
+    '<path d="M4 15a8 8 0 0 1 16 0z"></path><path d="M2.5 18.5h19M12 7V5.5"></path>',
+    '<path d="M3 11h18a9 9 0 0 1-18 0z"></path><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"></path>',
+    '<circle cx="10" cy="12" r="7"></circle><circle cx="10" cy="12" r="2.8"></circle><path d="M16.5 15.5L21 20"></path>',
+    '<path d="M14.5 3.5a6 6 0 0 1 6 6c0 4-4 6-7 6l-2.5 2.5"></path><path d="M11 18l-3 3M8.5 15.5l-3 .5-1.5 1.5 2.5 2.5 1.5-1.5.5-3"></path>'
+  ];
+  const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+
+  // Segunda-feira da semana que o funcionário está vendo (atual ou próxima)
+  function getViewedMonday() {
+    const st = S();
+    const data = st.currentMenuData || {};
+    if (st.viewingNextWeek) return data.nextWeekMonday ? new Date(data.nextWeekMonday) : global.getNextMenuMonday(data);
+    return data.weekMonday ? new Date(data.weekMonday) : global.__weekCalendar.mondayOf(new Date());
+  }
+
+  function getWeekDates() {
+    const monday = getViewedMonday();
+    return weekDays.map((_, i) => global.__weekCalendar.addDays(monday, i));
+  }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  // Nome do prato do dia, quando o ADM digitou o cardápio (menuText); senão a descrição padrão
+  function getDishText(dayId, optIndex) {
+    const mt = (S().weeklyMenu.menuText || {})[dayId];
+    if (!mt || typeof mt !== 'object') return '';
+    if (optIndex === 0) return mt.principal || '';
+    if (optIndex === 1) return mt.opcao || '';
+    return '';
+  }
+
+  function isDayDone(st, i) { return !!(st.userChoices[i] && st.userChoices[i].choice); }
+
+  // Próximo dia sem escolha depois de "from" (dá a volta na semana); -1 se todos feitos
+  function findPendingDay(st, from) {
+    for (let k = 1; k <= weekDays.length; k++) {
+      const i = (from + k) % weekDays.length;
+      if (!isDayDone(st, i)) return i;
+    }
+    return -1;
+  }
+
+  // Feriados entram sozinhos como "FERIADO"; dia que deixou de ser feriado volta a pedir escolha
+  function syncHolidayChoices(st) {
+    weekDays.forEach((day, i) => {
+      const isHoliday = st.userActiveHolidays.includes(getDayId(day));
+      if (isHoliday) st.userChoices[i] = { day, choice: 'FERIADO', notes: '' };
+      else if (st.userChoices[i] && st.userChoices[i].choice === 'FERIADO') st.userChoices[i] = undefined;
+    });
+  }
+
   function renderWizardStep(index) {
     const st = S();
     const wizardContainer = document.getElementById('order-wizard-container');
-    const submitBtnContainer = document.getElementById('submitButtonContainer');
-    if (index >= weekDays.length) {
-      wizardContainer.classList.add('hidden');
-      submitBtnContainer.classList.remove('hidden');
-      return;
+    if (!st.dayNotes) st.dayNotes = {};
+    clearTimeout(st.wizardAdvanceTimer);
+    syncHolidayChoices(st);
+    // Índice fora da semana (ou dia já resolvido no início) = vai para o primeiro dia pendente
+    if (!(index >= 0 && index < weekDays.length)) {
+      const pending = findPendingDay(st, weekDays.length - 1);
+      index = pending === -1 ? 0 : pending;
     }
+    st.currentDayIndex = index;
     wizardContainer.classList.remove('hidden');
-    submitBtnContainer.classList.add('hidden');
+
+    const dates = getWeekDates();
     const day = weekDays[index];
     const dayId = getDayId(day);
-    if (st.userActiveHolidays.includes(dayId)) {
-      st.userChoices[index] = { day: day, choice: "FERIADO", notes: "" };
-      st.currentDayIndex = index + 1;
-      renderWizardStep(st.currentDayIndex);
-      return;
-    }
-    document.getElementById('wizard-day-title').textContent = day;
+    const isHoliday = st.userActiveHolidays.includes(dayId);
+    const current = st.userChoices[index];
+
+    document.getElementById('wizard-days').innerHTML = weekDays.map((d, i) => {
+      const holiday = st.userActiveHolidays.includes(getDayId(d));
+      const done = !holiday && isDayDone(st, i);
+      const cls = ['day-chip', i === index ? 'active' : '', holiday ? 'holiday' : '', done ? 'done' : ''].join(' ');
+      const mark = holiday ? '<span class="chip-mark">feriado</span>' : (done ? `<span class="chip-mark">${CHECK_ICON}</span>` : '<span class="chip-mark"></span>');
+      const label = `${d}, ${pad2(dates[i].getDate())}/${pad2(dates[i].getMonth() + 1)}${holiday ? ', feriado' : (done ? ', escolhido' : '')}`;
+      return `<button type="button" role="tab" class="${cls}" data-day-index="${i}" aria-selected="${i === index}" aria-label="${label}"><span class="chip-day">${SHORT_DAYS[i]}</span><span class="chip-date">${pad2(dates[i].getDate())}</span>${mark}</button>`;
+    }).join('');
+
+    document.getElementById('wizard-day-title').textContent = `${day.replace('-feira', '')} · ${pad2(dates[index].getDate())}/${pad2(dates[index].getMonth() + 1)}`;
+    document.getElementById('wizard-day-hint').classList.toggle('hidden', isHoliday);
+    document.getElementById('wizard-holiday').classList.toggle('hidden', !isHoliday);
+    document.getElementById('wizard-notes-label').classList.toggle('hidden', isHoliday);
+
     const optionsContainer = document.getElementById('wizard-options');
-    optionsContainer.innerHTML = '';
-    mealOptions.forEach(opt => {
-      optionsContainer.innerHTML += `<button data-value="${opt.name}" class="wizard-btn text-left p-2 border-2 border-gray-200 dark:border-slate-700 hover:border-orange-500 dark:hover:border-orange-400 dark:bg-slate-800/50 rounded-lg"><div class="flex items-center"><span class="text-xl mr-2">${opt.emoji}</span><div><p class="font-bold text-gray-800 dark:text-slate-200 text-sm leading-tight">${opt.name}</p><p class="text-xs font-medium text-gray-500 dark:text-slate-400">${opt.description}</p></div></div></button>`;
-    });
-    document.getElementById('wizard-notes').value = '';
-    updateWizardProgress(index);
-    wizardContainer.classList.add('fade-in');
-    setTimeout(() => wizardContainer.classList.remove('fade-in'), 300);
+    optionsContainer.classList.toggle('hidden', isHoliday);
+    optionsContainer.innerHTML = isHoliday ? '' : mealOptions.map((opt, i) => {
+      const on = current && current.choice === opt.name;
+      const dish = getDishText(dayId, i);
+      return `<button type="button" data-value="${esc(opt.name)}" aria-pressed="${!!on}" class="wizard-btn option-card${on ? ' selected' : ''}">
+        <span class="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${OPTION_ICONS[i] || OPTION_ICONS[0]}</svg></span>
+        <span class="option-text"><span class="option-name">${esc(opt.name)}</span><span class="option-desc${dish ? ' dish' : ''}">${esc(dish || opt.description)}</span></span>
+        ${on ? `<span class="option-check">${CHECK_ICON}</span>` : ''}
+      </button>`;
+    }).join('');
+
+    const notesInput = document.getElementById('wizard-notes');
+    notesInput.value = st.dayNotes[index] || (current && current.choice !== 'FERIADO' ? current.notes || '' : '');
+    updateWizardProgress();
   }
 
-  function updateWizardProgress(index) {
-    const progressContainer = document.getElementById('wizard-progress');
-    progressContainer.innerHTML = '';
-    for (let i = 0; i < weekDays.length; i++) {
-      const dotClass = i < index ? 'bg-orange-500' : (i === index ? 'bg-orange-300' : 'bg-gray-300 dark:bg-zinc-700');
-      progressContainer.innerHTML += `<div class="w-2.5 h-2.5 rounded-full ${dotClass} transition-colors"></div>`;
-    }
+  function updateWizardProgress() {
+    const st = S();
+    const workDays = weekDays.filter(d => !st.userActiveHolidays.includes(getDayId(d))).length;
+    const done = weekDays.filter((d, i) => !st.userActiveHolidays.includes(getDayId(d)) && isDayDone(st, i)).length;
+    const complete = findPendingDay(st, weekDays.length - 1) === -1;
+    document.getElementById('wizard-progress-text').textContent = workDays === 0
+      ? 'Semana sem almoço (feriados)'
+      : (complete ? 'Todos os dias escolhidos' : `${done} de ${workDays} dias escolhidos`);
+    document.getElementById('wizard-progress-fill').style.width = `${workDays ? Math.round(done / workDays * 100) : 100}%`;
+    const nextBtn = document.getElementById('wizard-next');
+    nextBtn.classList.toggle('ready', complete);
+    document.getElementById('wizard-next-text').textContent = complete ? 'Revisar pedido' : 'Próximo dia';
+  }
+
+  // Data da semana em texto ("02 a 06/11") para a revisão do pedido
+  function getWeekRangeText() {
+    const dates = getWeekDates();
+    const first = dates[0], last = dates[dates.length - 1];
+    return `${pad2(first.getDate())}/${pad2(first.getMonth() + 1)} a ${pad2(last.getDate())}/${pad2(last.getMonth() + 1)}`;
   }
 
   // ===== Feriados (legado - checkboxes) =====
@@ -311,6 +397,7 @@
         if (imageChanged || st.userChoices.length === 0) {
           st.currentDayIndex = 0;
           st.userChoices = [];
+          st.dayNotes = {};
           // O wizard fica OCULTO aqui; validateForm()/checkExistingOrder()
           // só o exibem depois de confirmar que não há pedido existente.
           // (elimina o "flash" da seleção reaparecendo por segundos)
@@ -341,6 +428,8 @@
   global.toggleDarkMode = toggleDarkMode;
   global.renderWizardStep = renderWizardStep;
   global.updateWizardProgress = updateWizardProgress;
+  global.findPendingDay = findPendingDay;
+  global.getWeekRangeText = getWeekRangeText;
   global.renderHolidayCheckboxes = renderHolidayCheckboxes;
   global.showUserView = showUserView;
   global.showAdminView = showAdminView;

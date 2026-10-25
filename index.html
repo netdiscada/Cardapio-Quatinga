@@ -70,11 +70,6 @@
         .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
 
         /* Wizard Buttons */
-        .wizard-btn { transition: all 0.2s ease-in-out; }
-        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
-        .wizard-btn:active { transform: scale(0.98); }
-        .dark .wizard-btn:active { background-color: #1e3a8a; }
-        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
 
         /* APRIMORAMENTO: Refinamento de dark mode para consistência */
         .dark {
@@ -91,10 +86,6 @@
         .dark #cropper-container,
         .dark #imagePreviewContainer {
           background-color: #09090b !important;
-        }
-
-        .dark .wizard-btn:active {
-          background-color: #1e3a8a !important;
         }
 
         .dark input:read-only {
@@ -231,11 +222,6 @@
         .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
 
         /* Wizard Buttons */
-        .wizard-btn { transition: all 0.2s ease-in-out; }
-        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
-        .wizard-btn:active { transform: scale(0.98); }
-        .dark .wizard-btn:active { background-color: #1e3a8a; }
-        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
 
         /* APRIMORAMENTO: Refinamento de dark mode para consistência */
         .dark {
@@ -252,10 +238,6 @@
         .dark #cropper-container,
         .dark #imagePreviewContainer {
           background-color: #09090b !important;
-        }
-
-        .dark .wizard-btn:active {
-          background-color: #1e3a8a !important;
         }
 
         .dark input:read-only {
@@ -373,42 +355,6 @@
                     background: rgba(0,0,0,0.08) !important;
                     color: #111827 !important;
                 }
-                #menu-viewer-buttons > #order-wizard-container {
-                    background: #ffffff !important;
-                    border: 1px solid #e5e7eb !important;
-                    border-radius: 1rem 1rem 0 0;
-                    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
-                    margin-bottom: 0 !important;
-                    max-height: 42vh;
-                    overflow-y: auto;
-                    padding: 0.75rem !important;
-                }
-                #menu-viewer-buttons #wizard-day-title {
-                    color: #2563eb !important;
-                    margin-bottom: 0.5rem !important;
-                }
-                /* Botões do wizard grandes e fáceis de tocar (idosos) */
-                #menu-viewer-buttons .wizard-btn {
-                    min-height: 56px;
-                    font-size: 1rem;
-                    background: #ffffff !important;
-                    border: 2px solid #e5e7eb !important;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-                }
-                #menu-viewer-buttons .wizard-btn:hover,
-                #menu-viewer-buttons .wizard-btn:active {
-                    border-color: #2563eb !important;
-                    background: #eff6ff !important;
-                }
-                #menu-viewer-buttons .wizard-btn p:first-child { color: #111827 !important; }
-                #menu-viewer-buttons .wizard-btn p + p { color: #4b5563 !important; }
-                #menu-viewer-buttons #wizard-notes {
-                    background: #ffffff !important;
-                    border-color: #d1d5db !important;
-                    color: #111827 !important;
-                }
-                #menu-viewer-buttons #wizard-notes::placeholder { color: #6b7280 !important; }
-                #menu-viewer-buttons #wizard-progress .bg-gray-300 { background: #d1d5db !important; }
 
                 /* ----- Modo noturno ----- */
                 html.dark #menu-viewer-modal #viewer-zoom-in,
@@ -417,35 +363,6 @@
                 html.dark #menu-viewer-modal #viewer-close-btn {
                     background: rgba(255,255,255,0.15) !important;
                     color: #ffffff !important;
-                }
-                html.dark #menu-viewer-buttons > #order-wizard-container {
-                    background: #1f1f23 !important;
-                    border-color: #2e2e33 !important;
-                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-                }
-                html.dark #menu-viewer-buttons #wizard-day-title { color: #93c5fd !important; }
-                html.dark #menu-viewer-buttons .wizard-btn {
-                    background: #2a2a30 !important;
-                    border-color: #3f3f46 !important;
-                    box-shadow: none !important;
-                }
-                html.dark #menu-viewer-buttons .wizard-btn:hover,
-                html.dark #menu-viewer-buttons .wizard-btn:active {
-                    border-color: #60a5fa !important;
-                    background: #30303a !important;
-                }
-                html.dark #menu-viewer-buttons .wizard-btn p:first-child { color: #ffffff !important; }
-                html.dark #menu-viewer-buttons .wizard-btn p + p { color: #c4c4cc !important; }
-                html.dark #menu-viewer-buttons #wizard-notes {
-                    background: #2a2a30 !important;
-                    border-color: #3f3f46 !important;
-                    color: #ffffff !important;
-                }
-                html.dark #menu-viewer-buttons #wizard-notes::placeholder { color: #a1a1aa !important; }
-                html.dark #menu-viewer-buttons #wizard-progress .bg-gray-300 { background: #52525b !important; }
-                /* Container do submit (revisar pedido) também entra no rodapé */
-                #menu-viewer-buttons > #submitButtonContainer {
-                    margin-top: 0.5rem;
                 }
                 /* Garante fundo sólido no rodapé do viewer para não "sumir" os botões */
                 #menu-viewer-buttons {
@@ -482,8 +399,8 @@
                     background: rgba(255,255,255,0.25) !important;
                 }
             </style>
-<script src="js/menu-viewer.js?v=2026.15"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.21">
+<script src="js/menu-viewer.js?v=2026.16"></script>
+    <link rel="stylesheet" href="css/theme.css?v=2026.22">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -548,35 +465,45 @@
                             <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
                         </div>
                         <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
-                        <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
-                        </div>
+                        <button type="button" id="menu-fullscreen-btn" class="menu-fullscreen-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>Ver em tela cheia</button>
                     </div>
 
-                    <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
-                        <div class="text-center mb-6">
-                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 mb-4">
-                                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            </div>
-                            <h3 id="existing-order-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Pedido Registado!</h3>
-                            <p class="text-gray-600 dark:text-gray-400 mt-2 font-medium">Você já realizou este pedido. Consulte abaixo as suas escolhas:</p>
-                        </div>
-                        <div id="existing-order-details" class="space-y-3 mb-4"></div>
-                    </div>
-
-                    <div id="order-wizard-container" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 mb-4 transition-colors">
-                        <div id="order-wizard">
-                            <h3 id="wizard-day-title" class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3 text-center"></h3>
-                            <div id="wizard-options" class="grid grid-cols-2 gap-2 mb-3"></div>
+                    <div id="existing-order-container" class="hidden order-card done-card fade-in">
+                        <div class="done-head">
+                            <div class="done-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
                             <div>
-                                <textarea id="wizard-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" placeholder="Anotações? Ex: sem cebola"></textarea>
+                                <h3 id="existing-order-title">Pedido feito!</h3>
+                                <p>Estas são as suas escolhas:</p>
                             </div>
-                            <div id="wizard-progress" class="flex space-x-2 justify-center mt-4"></div>
                         </div>
+                        <div id="existing-order-details" class="summary-list"></div>
                     </div>
 
-                    <div id="submitButtonContainer" class="hidden text-center mt-2 mb-6">
-                        <button id="openConfirmationModal" class="w-full bg-green-500 dark:bg-green-600 text-white font-bold text-lg px-6 py-4 rounded-xl hover:bg-green-600 dark:hover:bg-green-500 shadow-md transition-transform transform active:scale-95 cursor-pointer">✅ Revisar e Finalizar Pedido</button>
+                    <!-- Pedido: chips dos dias, opções do dia, observação e barra de progresso -->
+                    <div id="order-wizard-container" class="order-card">
+                        <div id="order-wizard">
+                            <div id="wizard-days" class="day-chips" role="tablist" aria-label="Dias da semana"></div>
+                            <div class="wizard-head">
+                                <h3 id="wizard-day-title"></h3>
+                                <span id="wizard-day-hint">Escolha 1 opção</span>
+                            </div>
+                            <div id="wizard-holiday" class="holiday-note hidden">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+                                <div><strong>Feriado</strong><span>Sem almoço nesse dia.</span></div>
+                            </div>
+                            <div id="wizard-options" class="option-grid"></div>
+                            <label id="wizard-notes-label" class="notes-field">
+                                Observação (opcional)
+                                <input type="text" id="wizard-notes" autocomplete="off" enterkeyhint="done" maxlength="120" placeholder="Ex.: sem cebola">
+                            </label>
+                            <div class="wizard-footer">
+                                <div class="wizard-progress">
+                                    <span id="wizard-progress-text"></span>
+                                    <div class="progress-track"><div id="wizard-progress-fill"></div></div>
+                                </div>
+                                <button type="button" id="wizard-next" class="wizard-next"><span id="wizard-next-text">Próximo dia</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -590,10 +517,11 @@
                 <div id="guidanceSection" class="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-400 p-4 rounded-md mb-6 transition-colors"><p id="guidanceText" class="font-bold">Aguardando cardápio...</p></div>
             </div>
             
-            <div id="success-message" class="hidden text-center p-10 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-3xl font-bold text-green-500 dark:text-green-400">Pedido Enviado com Sucesso!</h2>
-                <p id="success-text" class="mt-4 text-gray-600 dark:text-gray-400 font-medium"></p>
-                <button onclick="location.reload()" class="mt-6 bg-blue-600 dark:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">Retornar ao Início</button>
+            <div id="success-message" class="hidden success-card">
+                <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
+                <h2>Pedido enviado!</h2>
+                <p id="success-text"></p>
+                <button type="button" onclick="location.reload()" class="btn-primary">Voltar ao início</button>
             </div>
 
             <!-- ===== ABA FERIADOS (funcionário) ===== -->
@@ -1143,16 +1071,19 @@
     </div>
     
     <!-- Modal Confirmar Pedido -->
-    <div id="confirmation-modal" class="modal-overlay hidden no-print">
-        <div class="modal-content fade-in">
-            <h2 class="text-2xl font-bold mb-4">Confirme o seu Pedido</h2>
-            <p class="mb-6 text-gray-600 dark:text-gray-400 font-medium">Por favor, revise as suas escolhas antes de enviar.</p>
-            <div id="confirmation-summary" class="space-y-2 mb-8"></div>
-            <div class="flex justify-end space-x-4">
-                <button type="button" id="btn-edit-wizard" class="px-6 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Editar</button>
-                <button id="submitOrder" class="px-6 py-2 bg-green-500 dark:bg-green-600 text-white font-bold rounded-lg hover:bg-green-600 dark:hover:bg-green-500 transition-colors cursor-pointer">Confirmar e Enviar</button>
+    <div id="confirmation-modal" class="modal-overlay sheet-overlay hidden no-print">
+        <section class="sheet" aria-labelledby="confirmation-title">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div>
+                <h2 id="confirmation-title" class="sheet-title">Confira seu pedido</h2>
+                <p id="confirmation-week" class="sheet-sub"></p>
             </div>
-        </div>
+            <div id="confirmation-summary" class="summary-list"></div>
+            <div class="sheet-actions">
+                <button type="button" id="btn-edit-wizard" class="btn-secondary">Editar</button>
+                <button type="button" id="submitOrder" class="btn-primary">Confirmar e enviar</button>
+            </div>
+        </section>
     </div>
     
     <!-- Modal Admin Login -->
@@ -1332,8 +1263,8 @@
     <script src="js/firebase.js?v=2026.1"></script>
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.20"></script>
-    <script src="js/order.js?v=2026.18"></script>
+    <script src="js/ui.js?v=2026.21"></script>
+    <script src="js/order.js?v=2026.19"></script>
     <script src="js/userhelp.js?v=2026.15"></script>
     <script src="js/admin.js?v=2026.20"></script>
     <script src="js/financas.js?v=2026.11"></script>
@@ -1343,7 +1274,7 @@
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
-    <script src="js/app.js?v=2026.17"></script>
+    <script src="js/app.js?v=2026.18"></script>
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">
             <!-- Topo: fecha + controles de zoom -->
             <div class="flex items-center justify-between p-3 shrink-0">

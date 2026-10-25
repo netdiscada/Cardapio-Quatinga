@@ -38,18 +38,17 @@
     const st = S();
     const detailsContainer = document.getElementById('existing-order-details');
     detailsContainer.innerHTML = '';
-    document.getElementById('existing-order-title').textContent = st.viewingNextWeek ? "Pedido da Próxima Semana Registado!" : "Pedido Registado!";
-    weekDays.forEach(day => {
+    document.getElementById('existing-order-title').textContent = st.viewingNextWeek ? "Pedido da próxima semana feito!" : "Pedido feito!";
+    detailsContainer.innerHTML = weekDays.map(day => {
       const dayId = getDayId(day);
-      const choice = orderData[dayId];
-      const notes = orderData[`${dayId}_notes`];
-      if (choice) {
-        let displayChoice = choice === 'FERIADO' ? '🏖️ FERIADO (Sem Pedido)' : `🍽️ ${esc(choice)}`;
-        let notesHtml = notes ? `<span class="text-sm text-gray-500 italic block sm:inline mt-1 sm:mt-0 sm:ml-2">(${esc(notes)})</span>` : '';
-        let styleClass = choice === 'FERIADO' ? 'bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-zinc-700' : 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800/50';
-        detailsContainer.innerHTML += `<div class="p-4 rounded-xl border ${styleClass} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 transition-all hover:shadow-md"><span class="font-bold w-full sm:w-1/3">${day}</span><div class="w-full sm:w-2/3 text-left sm:text-right font-medium">${displayChoice} ${notesHtml}</div></div>`;
-      }
-    });
+      return orderData[dayId] ? summaryRow(day, orderData[dayId], orderData[`${dayId}_notes`]) : '';
+    }).join('');
+  }
+
+  // Linha do resumo (pedido feito e revisão): dia à esquerda, prato e observação à direita
+  function summaryRow(day, choice, notes) {
+    const holiday = choice === 'FERIADO';
+    return `<div class="summary-row${holiday ? ' holiday' : ''}"><span class="summary-day">${esc(day.replace('-feira', ''))}</span><span class="summary-choice">${holiday ? 'Feriado' : esc(choice)}${notes ? `<small>${esc(notes)}</small>` : ''}</span></div>`;
   }
 
   // ===== Verifica se ja existe pedido do funcionario =====
@@ -61,7 +60,6 @@
       const snapshot = await fb.getDocs(q);
       const wizardContainer = document.getElementById('order-wizard-container');
       const existingContainer = document.getElementById('existing-order-container');
-      const submitBtnContainer = document.getElementById('submitButtonContainer');
       const publicReportBtnContainer = document.getElementById('publicReportButtonContainer');
       let latestOrder = null;
       let latestTime = 0;
@@ -78,7 +76,6 @@
       if (latestOrder) {
         displayExistingOrder(latestOrder);
         wizardContainer.classList.add('hidden');
-        submitBtnContainer.classList.add('hidden');
         existingContainer.classList.remove('hidden');
         publicReportBtnContainer.classList.remove('hidden');
         return;
@@ -89,29 +86,59 @@
       // NÃO zera as escolhas nem volta pro passo 0 (fix do bug visual).
       const stImgChanged = st.menuImageChanged;
       if (stImgChanged || st.userChoices.length === 0) {
-        st.currentDayIndex = 0;
+        st.currentDayIndex = -1;
         st.userChoices = [];
+        st.dayNotes = {};
       }
       renderWizardStep(st.currentDayIndex);
-      wizardContainer.classList.remove('hidden');
-      submitBtnContainer.classList.add('hidden');
     } catch (error) { console.error(error); }
   }
 
   // ===== Selecao no wizard =====
+  // Marca a opção do dia ativo e, depois de mostrar a marcação, passa sozinho
+  // para o próximo dia que falta (os chips deixam voltar a qualquer dia)
   function handleWizardSelection(event) {
     const st = S();
     const choiceBtn = event.target.closest('.wizard-btn');
     if (!choiceBtn) return;
-    // Toque duplo no último prato registrava um "6º dia" sem nome e quebrava o Finalizar
-    if (st.currentDayIndex >= weekDays.length) return;
-    st.userChoices[st.currentDayIndex] = {
-      day: weekDays[st.currentDayIndex],
+    const index = st.currentDayIndex;
+    if (!(index >= 0 && index < weekDays.length)) return;
+    st.userChoices[index] = {
+      day: weekDays[index],
       choice: choiceBtn.dataset.value,
       notes: document.getElementById('wizard-notes').value.trim()
     };
-    st.currentDayIndex++;
-    renderWizardStep(st.currentDayIndex);
+    renderWizardStep(index);
+    const pending = global.findPendingDay(st, index);
+    if (pending !== -1) {
+      st.wizardAdvanceTimer = setTimeout(() => {
+        if (st.currentDayIndex === index) renderWizardStep(pending);
+      }, 350);
+    }
+  }
+
+  // Botão da barra: "Próximo dia" vai ao próximo pendente; com tudo escolhido abre a revisão
+  function handleWizardNext() {
+    const st = S();
+    const pending = global.findPendingDay(st, st.currentDayIndex);
+    if (pending === -1) openConfirmationModal();
+    else renderWizardStep(pending);
+  }
+
+  function handleWizardDayChip(event) {
+    const chip = event.target.closest('.day-chip');
+    if (!chip) return;
+    renderWizardStep(Number(chip.dataset.dayIndex));
+  }
+
+  // Observação fica guardada por dia, mesmo antes de escolher o prato
+  function handleWizardNotes(event) {
+    const st = S();
+    const index = st.currentDayIndex;
+    if (!st.dayNotes) st.dayNotes = {};
+    st.dayNotes[index] = event.target.value;
+    const current = st.userChoices[index];
+    if (current && current.choice !== 'FERIADO') current.notes = event.target.value.trim();
   }
 
   // ===== Valida formulario e decide o que mostrar =====
@@ -175,16 +202,15 @@
       timestamp: fb.serverTimestamp()
     };
     const summaryContainer = document.getElementById('confirmation-summary');
-    summaryContainer.innerHTML = '';
-    st.userChoices = st.userChoices.filter(item => item && item.day);
-    st.userChoices.forEach(item => {
+    // userChoices é indexado pelo dia (0 = segunda): os chips deixam escolher fora de ordem
+    const items = st.userChoices.filter(item => item && item.day);
+    items.forEach(item => {
       const dayId = getDayId(item.day);
       st.tempOrderData[dayId] = item.choice;
-      if (item.notes) st.tempOrderData[`${dayId}_notes`] = item.notes;
-      const displayChoice = item.choice === 'FERIADO' ? '🏖️ FERIADO (Sem Pedido)' : item.choice;
-      const styleClass = item.choice === 'FERIADO' ? 'text-gray-400 italic' : 'text-gray-800 dark:text-gray-200';
-      summaryContainer.innerHTML += `<p class="${styleClass}"><span class="font-bold">${item.day}:</span> ${esc(displayChoice)} ${item.notes ? `<span class="text-sm text-gray-500 italic">(${esc(item.notes)})</span>` : ''}</p>`;
+      if (item.notes && item.choice !== 'FERIADO') st.tempOrderData[`${dayId}_notes`] = item.notes;
     });
+    summaryContainer.innerHTML = items.map(item => summaryRow(item.day, item.choice, item.choice === 'FERIADO' ? '' : item.notes)).join('');
+    document.getElementById('confirmation-week').textContent = `Semana de ${global.getWeekRangeText()}`;
     document.getElementById('confirmation-modal').classList.remove('hidden');
   }
 
@@ -218,7 +244,7 @@
     } catch (error) {
       showToast("Erro ao processar pedido.", 'error');
     } finally {
-      button.disabled = false; button.textContent = 'Confirmar e Enviar';
+      button.disabled = false; button.textContent = 'Confirmar e enviar';
     }
   }
 
@@ -226,6 +252,9 @@
   global.displayExistingOrder = displayExistingOrder;
   global.checkExistingOrder = checkExistingOrder;
   global.handleWizardSelection = handleWizardSelection;
+  global.handleWizardNext = handleWizardNext;
+  global.handleWizardDayChip = handleWizardDayChip;
+  global.handleWizardNotes = handleWizardNotes;
   global.validateForm = validateForm;
   global.openConfirmationModal = openConfirmationModal;
   global.submitOrder = submitOrder;

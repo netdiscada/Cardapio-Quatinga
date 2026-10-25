@@ -37,20 +37,10 @@ function menuViewerOpen() {
     modal.classList.remove('hidden');
     MENU_VIEWER.isOpen = true;
 
-    // Move o wizard E o botão de revisar pra dentro do viewer (botões fixos embaixo)
+    // Move o pedido (dias, opções e botão de revisar) pra dentro do viewer (fixo embaixo)
     const wizardHost = document.getElementById('menu-viewer-buttons');
     const wizard = document.getElementById('order-wizard-container');
-    const submitBtn = document.getElementById('submitButtonContainer');
-    if (wizardHost) {
-        if (wizard) {
-            if (!wizard.dataset.origParent) wizard.dataset.origParent = 'order-section';
-            wizardHost.appendChild(wizard);
-        }
-        if (submitBtn) {
-            if (!submitBtn.dataset.origParent) submitBtn.dataset.origParent = 'order-section';
-            wizardHost.appendChild(submitBtn);
-        }
-    }
+    if (wizardHost && wizard) wizardHost.appendChild(wizard);
 }
 
 function menuViewerClose() {
@@ -59,19 +49,11 @@ function menuViewerClose() {
     modal.classList.add('hidden');
     MENU_VIEWER.isOpen = false;
 
-    // Devolve wizard e botão de revisar pro lugar original (após menu-image-container)
-    const imgContainer = document.getElementById('menu-image-container');
+    // Devolve o pedido pro lugar original (no fim da order-section, após o pedido existente)
+    const orderSection = document.getElementById('order-section');
     const wizard = document.getElementById('order-wizard-container');
-    const submitBtn = document.getElementById('submitButtonContainer');
-    if (imgContainer && imgContainer.parentNode) {
-        let anchor = imgContainer.nextSibling;
-        if (wizard && wizard.parentElement?.id === 'menu-viewer-buttons') {
-            imgContainer.parentNode.insertBefore(wizard, anchor);
-            anchor = wizard.nextSibling;
-        }
-        if (submitBtn && submitBtn.parentElement?.id === 'menu-viewer-buttons') {
-            imgContainer.parentNode.insertBefore(submitBtn, anchor);
-        }
+    if (orderSection && wizard && wizard.parentElement?.id === 'menu-viewer-buttons') {
+        orderSection.appendChild(wizard);
     }
 }
 
