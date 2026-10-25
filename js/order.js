@@ -103,6 +103,8 @@
     const st = S();
     const choiceBtn = event.target.closest('.wizard-btn');
     if (!choiceBtn) return;
+    // Toque duplo no último prato registrava um "6º dia" sem nome e quebrava o Finalizar
+    if (st.currentDayIndex >= weekDays.length) return;
     st.userChoices[st.currentDayIndex] = {
       day: weekDays[st.currentDayIndex],
       choice: choiceBtn.dataset.value,
@@ -174,6 +176,7 @@
     };
     const summaryContainer = document.getElementById('confirmation-summary');
     summaryContainer.innerHTML = '';
+    st.userChoices = st.userChoices.filter(item => item && item.day);
     st.userChoices.forEach(item => {
       const dayId = getDayId(item.day);
       st.tempOrderData[dayId] = item.choice;
