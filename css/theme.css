@@ -147,3 +147,10 @@ html.dark #menu-viewer-buttons .wizard-btn,
 html.dark #menu-viewer-buttons #wizard-notes { background: var(--surface-2) !important; border-color: #2E3B57 !important; }
 html.dark #menu-viewer-buttons .wizard-btn:hover,
 html.dark #menu-viewer-buttons .wizard-btn:active { background: var(--primary-soft) !important; border-color: #6E8EFB !important; }
+
+/* Celular: botões do topo só com ícone, para o nome da marca caber em uma linha */
+@media (max-width: 440px) {
+  #app-topbar .icon-btn span { display: none; }
+  #app-topbar .icon-btn { padding: 0; width: 44px; }
+  #app-topbar .brand-name { font-size: 18px; white-space: nowrap; }
+}
