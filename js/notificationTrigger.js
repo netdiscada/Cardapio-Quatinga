@@ -19,7 +19,7 @@
       body: JSON.stringify(payload)
     });
     const data = await res.json().catch(() => ({}));
-    console.log('[notify]', payload.type, res.status, data);
+    console.log('[notify]', payload.type, res.status, String(payload.type).startsWith('fin_') ? '' : data);
     if (!res.ok) throw new Error('notify ' + res.status);
     return data;
   }

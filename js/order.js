@@ -46,9 +46,16 @@
   }
 
   // Linha do resumo (pedido feito e revisão): dia à esquerda, prato e observação à direita
+  // Com o cardápio digitado, mostra o nome do prato (e a guarnição) em vez de só "Opção"
   function summaryRow(day, choice, notes) {
     const holiday = choice === 'FERIADO';
-    return `<div class="summary-row${holiday ? ' holiday' : ''}"><span class="summary-day">${esc(day.replace('-feira', ''))}</span><span class="summary-choice">${holiday ? 'Feriado' : esc(choice)}${notes ? `<small>${esc(notes)}</small>` : ''}</span></div>`;
+    const mt = ((S().weeklyMenu || {}).menuText || {})[getDayId(day)];
+    const field = { 'Prato Principal': 'principal', 'Opção': 'opcao' }[choice];
+    const dish = !holiday && field && mt && typeof mt === 'object' ? (mt[field] || '') : '';
+    const garnish = dish && mt.guarnicao ? mt.guarnicao : '';
+    const main = holiday ? 'Feriado' : esc(dish || choice);
+    const label = dish ? `<span class="summary-label">${esc(choice)}</span>` : '';
+    return `<div class="summary-row${holiday ? ' holiday' : ''}"><span class="summary-day">${esc(day.replace('-feira', ''))}</span><span class="summary-choice">${label}${main}${garnish ? `<small>com ${esc(garnish)}</small>` : ''}${notes ? `<small class="summary-note">${esc(notes)}</small>` : ''}</span></div>`;
   }
 
   // ===== Verifica se ja existe pedido do funcionario =====

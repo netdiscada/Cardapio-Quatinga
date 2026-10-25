@@ -31,7 +31,10 @@
         else if (hadNextWeek && !hasNextWeek) { setAdminTab(false); }
       }
 
-      if (st.currentMenuData.targetRotationDate && Date.now() >= st.currentMenuData.targetRotationDate) {
+      // A virada é feita pelo Worker (cron a cada 15 min); o celular do ADM só adianta se estiver aberto.
+      // Funcionário não vira: as regras do banco não deixam ele gravar no cardápio.
+      const isAdminUser = auth.currentUser && auth.currentUser.uid === global.APP_CONFIG.ADMIN_UID;
+      if (isAdminUser && st.currentMenuData.targetRotationDate && Date.now() >= st.currentMenuData.targetRotationDate) {
         // NOVA TRAVA: Só executa a virada automática se realmente houver um cardápio da próxima semana
         if (!st.currentMenuData.nextMenuImageBase64) {
           console.log("Virada cancelada: Não há imagem/cardápio da próxima semana programado.");

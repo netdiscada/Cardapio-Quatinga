@@ -387,6 +387,10 @@ html.dark .done-icon, html.dark .success-icon { background: #0F2E1F; color: #86E
 .summary-day { font-size: 14px; font-weight: 700; color: var(--muted); }
 .summary-choice { font-size: 15px; font-weight: 800; color: var(--text); text-align: right; display: flex; flex-direction: column; }
 .summary-choice small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.summary-day { flex: none; }
+.summary-choice { min-width: 0; line-height: 1.3; }
+.summary-label { font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--primary, #2563EB); }
+.summary-choice small.summary-note { font-style: italic; }
 .summary-row.holiday .summary-choice { color: #9A3412; }
 html.dark .summary-row.holiday .summary-choice { color: #FDBA74; }
 

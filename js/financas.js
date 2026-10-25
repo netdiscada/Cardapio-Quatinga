@@ -1,9 +1,13 @@
 // Cardapio Quatinga v3 - financas.js
-// Aba de Financas do funcionario: login por RGF+senha (hash SHA-256 com salt),
-// lancamentos mensais, resumo do mes, exportacao em PDF (jsPDF).
+// Aba de Financas do funcionario: login por RGF+senha, lancamentos mensais, resumo do mes,
+// exportacao em PDF (jsPDF).
+// A senha e conferida no Worker (fin_login/fin_register/fin_change); o celular nunca ve o hash.
+// O Worker devolve um custom token com a claim finRgf, usado num app Firebase separado
+// ("financas") para nao derrubar o login anonimo/ADM do app principal.
 // Colecoes Firestore:
-//   funcionarios_senhas/{rgf} -> { senhaHash: string }
+//   funcionarios_senhas/{rgf} -> so o Worker le e grava
 //   financas/{rgf}/lancamentos/{docId} -> {mes, ano, categoria, valor, tipo, descricao, createdAt}
+//     (regras: so quem tem finRgf == rgf)
 // Carregado apos userhelp.js. Escopo global via window.
 
 (function (global) {
@@ -22,7 +26,6 @@
 
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const SALT = 'quatinga-financas-2026';
 
   // Estado local da aba
   const F = {
@@ -34,13 +37,6 @@
     unsubscribe: null,
   };
 
-  // ===== Hash SHA-256 =====
-  async function sha256(texto) {
-    const enc = new TextEncoder().encode(texto);
-    const buf = await crypto.subtle.digest('SHA-256', enc);
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
   function fmtMoney(v) {
     const n = parseFloat(String(v).replace(',', '.'));
     if (isNaN(n)) return '—';
@@ -48,12 +44,27 @@
   }
 
   // ===== Referências Firestore =====
-  function senhaRef(rgf) {
-    return fb.doc(global.db, 'funcionarios_senhas', rgf);
+  // App Firebase separado só para as Finanças (sessão própria com a claim finRgf)
+  function finApp() {
+    return global.firebase.apps.find(a => a.name === 'financas') || global.firebase.initializeApp(global.firebaseConfig, 'financas');
+  }
+  function finDb() { return finApp().firestore(); }
+  function finAuth() { return finApp().auth(); }
+
+  async function finRgfLogado() {
+    const u = finAuth().currentUser;
+    if (!u) return null;
+    try { return (await u.getIdTokenResult()).claims.finRgf || null; } catch (e) { return null; }
+  }
+
+  async function finEntrarComToken(token, lembrar) {
+    const P = global.firebase.auth.Auth.Persistence;
+    await finAuth().setPersistence(lembrar ? P.LOCAL : P.SESSION);
+    await finAuth().signInWithCustomToken(token);
   }
 
   function lancamentosRef(rgf) {
-    return fb.doc(global.db, 'financas', rgf).collection('lancamentos');
+    return fb.doc(finDb(), 'financas', rgf).collection('lancamentos');
   }
   function lancamentoRef(rgf, id) {
     return lancamentosRef(rgf).doc(id);
@@ -164,39 +175,23 @@
     if (!msg) el.classList.add('hidden');
   }
 
-  // ===== Login / Cadastro =====
-  async function verificarRgf(rgf) {
-    const doc = await fb.getDoc(senhaRef(rgf));
-    return doc.exists ? doc.data().senhaHash : null;
-  }
-
+  // ===== Login / Cadastro (conferidos no Worker) =====
   async function handleIdentificar(e) {
     e.preventDefault();
     const input = document.getElementById('fin-rgf-input');
     const rgf = (input.value || '').trim().replace(/\D/g, '');
     if (!rgf) { setStatus('fin-status', 'Digite seu RGF.', 'error'); return; }
-
-    // Se já tem senha salva no dispositivo, tenta login direto
-    const senhaSalva = localStorage.getItem('fin_senha_' + rgf);
     try {
-      const hashSalvo = await verificarRgf(rgf);
-      if (hashSalvo && senhaSalva) {
-        const hashTentativa = await sha256(senhaSalva + SALT);
-        if (hashTentativa === hashSalvo) {
-          entrar(rgf);
-          return;
-        }
-        localStorage.removeItem('fin_senha_' + rgf); // senha mudou em outro aparelho
-      }
-      if (hashSalvo) {
-        // Tem senha: mostra campo de senha do login
-        F.rgf = rgf;
+      // Sessão lembrada neste aparelho para o mesmo RGF: entra direto
+      if (await finRgfLogado() === rgf) { entrar(rgf); return; }
+      const st = await global.callNotifyEndpoint({ type: 'fin_status', rgf });
+      if (st.error) throw new Error(st.error);
+      F.rgf = rgf;
+      if (st.exists) {
         document.getElementById('fin-senha-wrap').classList.remove('hidden');
         document.getElementById('fin-senha-input').focus();
-        setStatus('fin-status', 'RGF encontrado. Digite sua senha.', 'info');
+        setStatus('fin-status', st.lockedSeconds ? `Muitas tentativas. Tente de novo em ${Math.ceil(st.lockedSeconds / 60)} min.` : 'RGF encontrado. Digite sua senha.', st.lockedSeconds ? 'error' : 'info');
       } else {
-        // Não tem senha: vai pro cadastro
-        F.rgf = rgf;
         mostrarTela('cadastro');
         setStatus('fin-cad-status', 'Primeiro acesso: crie sua senha. Só você a conhece.', 'info');
       }
@@ -210,16 +205,11 @@
     const senha = (document.getElementById('fin-senha-input').value || '').trim();
     if (!senha) { setStatus('fin-status', 'Digite a senha.', 'error'); return; }
     try {
-      const hashSalvo = await verificarRgf(F.rgf);
-      const hashTentativa = await sha256(senha + SALT);
-      if (hashTentativa === hashSalvo) {
-        if (document.getElementById('fin-lembrar').checked) {
-          localStorage.setItem('fin_senha_' + F.rgf, senha);
-        }
-        entrar(F.rgf);
-      } else {
-        setStatus('fin-status', 'Senha incorreta.', 'error');
-      }
+      const r = await global.callNotifyEndpoint({ type: 'fin_login', rgf: F.rgf, senha });
+      if (!r.token) { setStatus('fin-status', r.error || 'Senha incorreta.', 'error'); return; }
+      await finEntrarComToken(r.token, document.getElementById('fin-lembrar').checked);
+      document.getElementById('fin-senha-input').value = '';
+      entrar(F.rgf);
     } catch (err) {
       setStatus('fin-status', 'Erro ao entrar: ' + err.message, 'error');
     }
@@ -232,11 +222,9 @@
     if (s1.length < 4) { setStatus('fin-cad-status', 'A senha precisa ter pelo menos 4 dígitos.', 'error'); return; }
     if (s1 !== s2) { setStatus('fin-cad-status', 'As senhas não conferem.', 'error'); return; }
     try {
-      const hash = await sha256(s1 + SALT);
-      await fb.setDoc(senhaRef(F.rgf), { senhaHash: hash });
-      if (document.getElementById('fin-cad-lembrar').checked) {
-        localStorage.setItem('fin_senha_' + F.rgf, s1);
-      }
+      const r = await global.callNotifyEndpoint({ type: 'fin_register', rgf: F.rgf, senha: s1 });
+      if (!r.token) { setStatus('fin-cad-status', r.error || 'Não foi possível criar a senha.', 'error'); return; }
+      await finEntrarComToken(r.token, document.getElementById('fin-cad-lembrar').checked);
       entrar(F.rgf);
     } catch (err) {
       setStatus('fin-cad-status', 'Erro ao salvar senha: ' + err.message, 'error');
@@ -293,7 +281,7 @@
       if (l.origem === 'salario') temSalario = d.ref;
     });
 
-    const batch = fb.writeBatch(global.db);
+    const batch = fb.writeBatch(finDb());
     const mesOrigem = MESES[folha.mes];
     if (folha.adiantamento > 0) {
       const payload = {
@@ -330,7 +318,7 @@
       snapMes.forEach(d => existentes.add((d.data().descricao || '') + '|' + d.data().categoria));
       const alvo = ano * 12 + mes;
 
-      const batch = fb.writeBatch(global.db);
+      const batch = fb.writeBatch(finDb());
       let criados = 0;
       snap.forEach(d => {
         const l = d.data();
@@ -354,6 +342,7 @@
 
   function sair() {
     if (F.unsubscribe) { F.unsubscribe(); F.unsubscribe = null; }
+    finAuth().signOut().catch(() => {});
     F.rgf = null;
     F.autenticado = false;
     F.lancamentos = [];
@@ -493,7 +482,7 @@
       return;
     }
 
-    const batch = fb.writeBatch(global.db);
+    const batch = fb.writeBatch(finDb());
     const basePayload = {
       categoria: cat, tipo, dia, competencia,
     };
@@ -618,7 +607,7 @@
     try {
       const alvo = F.lancamentos.find(x => x.id === ctx.id);
       const snap = await fb.getDocs(fb.query(lancamentosRef(F.rgf)));
-      const batch = fb.writeBatch(global.db);
+      const batch = fb.writeBatch(finDb());
       let count = 0;
       snap.forEach(d => {
         const l = d.data();
@@ -646,7 +635,7 @@
         fb.where('ano', '==', F.anoAtual), fb.where('mes', '==', F.mesAtual)));
       if (snap.empty) { global.showToast('Nenhum lançamento neste mês.', 'success'); return; }
       const vistos = new Set();
-      const batch = fb.writeBatch(global.db);
+      const batch = fb.writeBatch(finDb());
       let removidos = 0;
       snap.forEach(d => {
         const l = d.data();
@@ -677,13 +666,8 @@
     if (n1.length < 4) { setStatus('fin-troca-status', 'Nova senha precisa de 4+ dígitos.', 'error'); return; }
     if (n1 !== n2) { setStatus('fin-troca-status', 'Senhas novas não conferem.', 'error'); return; }
     try {
-      const hashSalvo = await verificarRgf(F.rgf);
-      if (await sha256(atual + SALT) !== hashSalvo) {
-        setStatus('fin-troca-status', 'Senha atual incorreta.', 'error');
-        return;
-      }
-      await fb.setDoc(senhaRef(F.rgf), { senhaHash: await sha256(n1 + SALT) });
-      if (localStorage.getItem('fin_senha_' + F.rgf)) localStorage.setItem('fin_senha_' + F.rgf, n1);
+      const r = await global.callNotifyEndpoint({ type: 'fin_change', rgf: F.rgf, senha: atual, nova: n1 });
+      if (!r.ok) { setStatus('fin-troca-status', r.error || 'Senha atual incorreta.', 'error'); return; }
       setStatus('fin-troca-status', 'Senha alterada!', 'ok');
       document.getElementById('fin-troca-modal').classList.add('hidden');
     } catch (err) {
@@ -777,6 +761,7 @@
   function bindFinancas() {
     const sec = document.getElementById('user-financas-section');
     if (!sec) return;
+    try { Object.keys(localStorage).filter(k => k.startsWith('fin_senha_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* sem storage */ }
 
     document.getElementById('fin-identificar-form').addEventListener('submit', handleIdentificar);
     document.getElementById('fin-login-form').addEventListener('submit', handleLogin);

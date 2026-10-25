@@ -48,7 +48,9 @@
       setTimeout(() => {
         try {
           if (global.getMenuDocRef) global.getMenuDocRef().get().catch(() => {});
-          if (global.getFuncionariosCollectionRef) global.getFuncionariosCollectionRef().get().catch(() => {});
+          // Lista de funcionários: as regras só deixam o ADM ler a coleção inteira
+          const isAdm = global.auth && global.auth.currentUser && global.auth.currentUser.uid === APP_CONFIG.ADMIN_UID;
+          if (isAdm && global.getFuncionariosCollectionRef) global.getFuncionariosCollectionRef().get().catch(() => {});
         } catch (e) { /* offline ou cota */ }
       }, 2000);
     } catch (e) { console.log("PWA setup falhou"); }
