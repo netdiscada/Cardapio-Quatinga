@@ -158,7 +158,7 @@
         const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
         const passou = d < hoje;
         if (!passou && proximoIdx === -1) proximoIdx = i;
-        const destaque = i === proximoIdx ? ' ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20' : (passou ? ' opacity-50' : '');
+        const destaque = i === proximoIdx ? ' ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/20' : (passou ? ' opacity-50 past-holiday' : '');
         const badge = i === proximoIdx ? '<span class="ml-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">PRÓXIMO</span>' : '';
         const facilito = /facultativo/i.test(f.evento) || /Facultativo/.test(f.evento);
         html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
@@ -171,11 +171,11 @@
         const parts = f.data.split('/');
         const d = new Date(parseInt(parts[2] || anoAtual, 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
         const dias = Math.ceil((d - hoje) / 86400000);
-        html = `<div class="rounded-xl p-4 mb-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 text-center">
-          <p class="text-xs font-bold text-blue-500 uppercase tracking-wide">Próximo feriado/ponto facultativo</p>
-          <p class="text-lg font-bold text-blue-800 dark:text-blue-200 mt-1">${f.data} · ${f.dia}</p>
-          <p class="text-sm font-semibold text-blue-600 dark:text-blue-300">${f.evento}</p>
-          <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>
+        html = `<div class="feature-card">
+          <span class="feature-kicker">Próximo feriado ou ponto facultativo</span>
+          <span class="feature-title">${f.evento}</span>
+          <span class="feature-text">${f.dia}, ${f.data}</span>
+          <span class="feature-chip">${dias === 0 ? 'É hoje!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</span>
         </div>` + html;
       }
       return html;
@@ -185,8 +185,9 @@
     listEl.innerHTML = `
       <div id="calendar-container">${renderCalendar(currentMonth, currentYear)}</div>
       <div class="border-t border-gray-200 dark:border-zinc-800 pt-4">
-        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">📋 Lista de Feriados</h3>
-        <div id="holidays-list" class="space-y-1.5">${renderList()}</div>
+        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-sm">Lista de feriados</h3>
+        <div id="holidays-list" class="space-y-1.5 hide-past">${renderList()}</div>
+        <button type="button" id="toggle-past-holidays" class="btn-ghost w-full mt-3" onclick="const l=document.getElementById('holidays-list');l.classList.toggle('hide-past');this.textContent=l.classList.contains('hide-past')?'Mostrar feriados que já passaram':'Esconder feriados que já passaram'">Mostrar feriados que já passaram</button>
       </div>
       <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
     `;
@@ -225,14 +226,14 @@
       if (p.decimo) {
         const dDec = new Date(2026, i, p.decimo);
         const passouDec = dDec < hoje;
-        decimoHtml = `<span class="font-bold text-amber-700 dark:text-amber-400${passouDec ? ' opacity-50' : ''}" title="13º Salário">🎁 ${String(p.decimo).padStart(2, '0')}</span>`;
+        decimoHtml = `<span class="font-bold text-amber-700 dark:text-amber-400${passouDec ? ' opacity-50' : ''}" title="13º Salário">13º ${String(p.decimo).padStart(2, '0')}</span>`;
       }
       
       html += `<div class="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-100 dark:border-zinc-800${destaque}">
         <p class="font-bold text-sm text-gray-800 dark:text-gray-100">${p.mes}</p>
         <div class="flex gap-3 text-sm">
-          <span class="font-bold text-green-700 dark:text-green-400">💵 ${String(p.pag).padStart(2, '0')}</span>
-          <span class="font-bold text-blue-600 dark:text-blue-400">⏩ ${String(p.adi).padStart(2, '0')}</span>
+          <span class="font-bold text-green-700 dark:text-green-400">Pag. ${String(p.pag).padStart(2, '0')}</span>
+          <span class="font-bold text-blue-600 dark:text-blue-400">Adi. ${String(p.adi).padStart(2, '0')}</span>
           ${decimoHtml}
         </div>
       </div>`;
@@ -270,10 +271,10 @@
       };
       const c = corClasses[proximoEvento.cor] || corClasses.green;
       const bg = bgClasses[proximoEvento.cor] || bgClasses.green;
-      nextEl.innerHTML = `<p class="text-xs font-bold ${c} uppercase tracking-wide">Próximo ${proximoEvento.label}</p>
-        <p class="text-2xl font-bold ${c.replace('600', '700').replace('400', '300')} mt-1">Dia ${String(proximoEvento.data.getDate()).padStart(2, '0')}/${MES_ABREV[proximoEvento.data.getMonth()]}</p>
-        <p class="text-xs ${c} mt-1 font-semibold">${dias === 0 ? 'É HOJE!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</p>`;
-      nextEl.className = `rounded-xl p-4 mb-4 ${bg} border text-center`;
+      nextEl.innerHTML = `<span class="feature-kicker">Próximo ${proximoEvento.label.toLowerCase()}</span>
+        <span class="feature-title">Dia ${String(proximoEvento.data.getDate()).padStart(2, '0')}/${MES_ABREV[proximoEvento.data.getMonth()]}</span>
+        <span class="feature-chip">${dias === 0 ? 'É hoje!' : dias === 1 ? 'É amanhã!' : `Faltam ${dias} dias`}</span>`;
+      nextEl.className = 'feature-card';
     }
   }
 
@@ -836,6 +837,32 @@
   }
 
   global.isHolidayDate = isHolidayDate;
+
+  // Próximo feriado (de hoje em diante) para o cartão da tela de início
+  function getNextHoliday() {
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    for (const f of HOLIDAYS_2026) {
+      const parts = f.data.split('/');
+      const data = new Date(parts[2] ? parseInt(parts[2], 10) : 2026, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      if (data >= hoje && f.dia !== 'Sábado' && f.dia !== 'Domingo') return { data, evento: f.evento };
+    }
+    return null;
+  }
+
+  // Próximo pagamento, adiantamento ou 13º
+  function getNextPaymentEvent() {
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const eventos = [];
+    PAYMENT_2026.forEach((p, i) => {
+      eventos.push({ label: 'Pagamento', data: new Date(2026, i, p.pag) });
+      eventos.push({ label: 'Adiantamento', data: new Date(2026, i, p.adi) });
+      if (p.decimo) eventos.push({ label: i === 10 ? '1ª parcela 13º' : '2ª parcela 13º', data: new Date(2026, i, p.decimo) });
+    });
+    return eventos.filter(e => e.data >= hoje).sort((a, b) => a.data - b.data)[0] || null;
+  }
+
+  global.getNextHoliday = getNextHoliday;
+  global.getNextPaymentEvent = getNextPaymentEvent;
 
   // ===== Boot =====
   function initUserHelp() {

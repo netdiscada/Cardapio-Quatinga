@@ -255,7 +255,10 @@
   global.handleWizardNext = handleWizardNext;
   global.handleWizardDayChip = handleWizardDayChip;
   global.handleWizardNotes = handleWizardNotes;
-  global.validateForm = validateForm;
+  // Toda validação termina redesenhando a tela de início (home.js)
+  global.validateForm = async function () {
+    try { await validateForm(); } finally { if (global.renderHome) global.renderHome(); }
+  };
   global.openConfirmationModal = openConfirmationModal;
   global.submitOrder = submitOrder;
 })(window);

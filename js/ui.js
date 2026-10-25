@@ -147,6 +147,12 @@
     document.getElementById('wizard-day-hint').classList.toggle('hidden', isHoliday);
     document.getElementById('wizard-holiday').classList.toggle('hidden', !isHoliday);
     document.getElementById('wizard-notes-label').classList.toggle('hidden', isHoliday);
+    const holidayInfo = isHoliday && global.isHolidayDate ? global.isHolidayDate(dates[index]) : null;
+    document.getElementById('wizard-holiday-name').textContent = holidayInfo && holidayInfo.isHoliday ? holidayInfo.evento : 'Feriado';
+    const dayText = (st.weeklyMenu.menuText || {})[dayId];
+    const garnish = !isHoliday && dayText && typeof dayText === 'object' ? (dayText.guarnicao || '') : '';
+    document.getElementById('wizard-garnish').textContent = garnish ? 'Guarnição: ' + garnish : '';
+    document.getElementById('wizard-garnish').classList.toggle('hidden', !garnish);
 
     const optionsContainer = document.getElementById('wizard-options');
     optionsContainer.classList.toggle('hidden', isHoliday);
@@ -357,15 +363,11 @@
 
   if (badgeText && badgeContainer) {
     if (st.viewingNextWeek) {
-      badgeText.textContent = 'Cardápio Antecipado (Próxima Semana)';
-      badgeContainer.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 transition-colors';
       st.weeklyMenu.menuImageBase64 = st.currentMenuData.nextMenuImageBase64;
       st.userActiveHolidays = st.currentMenuData.nextHolidays || [];
       // v3.2: texto extraído via OCR (se existir)
       st.weeklyMenu.menuText = st.currentMenuData.nextMenuText || {};
     } else {
-      badgeText.textContent = 'Cardápio da Semana Atual';
-      badgeContainer.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors';
       st.weeklyMenu.menuImageBase64 = st.currentMenuData.menuImageBase64;
       st.userActiveHolidays = st.currentMenuData.holidays || [];
       // v3.2: texto extraído via OCR (se existir)

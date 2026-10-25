@@ -400,7 +400,7 @@
                 }
             </style>
 <script src="js/menu-viewer.js?v=2026.16"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.22">
+    <link rel="stylesheet" href="css/theme.css?v=2026.23">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -429,35 +429,50 @@
         <!-- ================= VISÃO DO USUÁRIO ================= -->
         <div id="user-view" class="no-print">
             <div id="form-container">
-                <div class="text-center mb-6 mt-4">
-                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
-                    <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
-                        <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
-                    </div>
-
-                    <!-- ===== Caixa de recado do encarregado (acima do cardápio) ===== -->
-                    <div id="recado-caixa" class="hidden mt-4 rounded-xl border-l-4 border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20 p-4 shadow-sm flex items-start gap-3 transition-colors">
-                        <div class="flex-shrink-0 mt-0.5 text-xl">⚠️</div>
-                        <div>
-                            <p class="text-sm font-bold text-red-700 dark:text-red-400 leading-none uppercase tracking-tight">Atenção</p>
-                            <p id="recado-texto" class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mt-1"></p>
-                        </div>
-                    </div>
-
+                <!-- ===== Início do funcionário: saudação, destaque da semana, recado e RGF ===== -->
+                <div class="home-greeting">
+                    <span id="home-date"></span>
+                    <h1 id="home-hello">Olá!</h1>
                 </div>
 
-                <!-- Autenticação do Usuário via RGF -->
-                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
-                    <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
-                    <div class="grid sm:grid-cols-2 gap-3">
-                        <div>
-                            <input type="text" id="employeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
-                        </div>
-                        <div>
-                            <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
-                        </div>
+                <section id="home-hero" class="home-hero" aria-live="polite">
+                    <div class="hero-top">
+                        <span id="hero-kicker">Cardápio</span>
+                        <span id="hero-range" class="hero-chip hidden"></span>
+                    </div>
+                    <div class="hero-body">
+                        <h2 id="hero-title">Carregando cardápio...</h2>
+                        <p id="hero-text"></p>
+                    </div>
+                    <button type="button" id="hero-action" class="hero-btn hidden"><span id="hero-action-text">Fazer meu pedido</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                    <button type="button" id="week-badge-indicator" class="hero-switch hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"></path></svg><span id="week-badge-text"></span></button>
+                </section>
+
+                <!-- Recado do encarregado -->
+                <div id="recado-caixa" class="hidden recado-card">
+                    <div class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path><path d="M8 9.5h8M8 12.5h5"></path></svg></div>
+                    <div>
+                        <strong>Recado</strong>
+                        <p id="recado-texto"></p>
                     </div>
                 </div>
+
+                <!-- Identificação pelo RGF: compacta quando já reconhecido -->
+                <section id="identity-card" class="order-card identity-card">
+                    <div id="identity-compact" class="identity-compact hidden">
+                        <div id="identity-avatar" class="identity-avatar" aria-hidden="true"></div>
+                        <div class="identity-info">
+                            <span id="identity-name"></span>
+                            <span id="identity-rgf"></span>
+                        </div>
+                        <button type="button" id="identity-change" class="btn-ghost">Trocar</button>
+                    </div>
+                    <div id="identity-form" class="identity-form">
+                        <label for="employeeRGF" class="identity-label">Seu RGF</label>
+                        <input type="tel" id="employeeRGF" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" placeholder="Digite o seu RGF" class="identity-input">
+                        <input type="text" id="employeeName" placeholder="O seu nome aparece aqui" class="identity-name-input" readonly aria-label="Nome">
+                    </div>
+                </section>
 
                 <div id="order-section" class="hidden scroll-mt-2">
                     <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
@@ -487,9 +502,10 @@
                                 <h3 id="wizard-day-title"></h3>
                                 <span id="wizard-day-hint">Escolha 1 opção</span>
                             </div>
+                            <p id="wizard-garnish" class="wizard-garnish hidden"></p>
                             <div id="wizard-holiday" class="holiday-note hidden">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
-                                <div><strong>Feriado</strong><span>Sem almoço nesse dia.</span></div>
+                                <div><strong id="wizard-holiday-name">Feriado</strong><span>Sem almoço nesse dia. Toque em outro dia.</span></div>
                             </div>
                             <div id="wizard-options" class="option-grid"></div>
                             <label id="wizard-notes-label" class="notes-field">
@@ -515,6 +531,30 @@
                 </div>
                 
                 <div id="guidanceSection" class="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-400 p-4 rounded-md mb-6 transition-colors"><p id="guidanceText" class="font-bold">Aguardando cardápio...</p></div>
+
+                <!-- Atalhos da tela de início: próximo feriado, pagamento e avisos -->
+                <div class="home-mini">
+                    <button type="button" class="mini-card" data-go-tab="holidays">
+                        <span class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg></span>
+                        <span class="mini-label">Próximo feriado</span>
+                        <span id="mini-holiday-title" class="mini-title">—</span>
+                        <span id="mini-holiday-sub" class="mini-sub"></span>
+                    </button>
+                    <button type="button" class="mini-card" data-go-tab="payment">
+                        <span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="3"></rect><path d="M2.5 10.5h19M7 15h3"></path></svg></span>
+                        <span id="mini-pay-label" class="mini-label">Pagamento</span>
+                        <span id="mini-pay-title" class="mini-title">—</span>
+                        <span id="mini-pay-sub" class="mini-sub"></span>
+                    </button>
+                </div>
+                <div id="home-push" class="push-card hidden">
+                    <span id="home-push-icon" class="mini-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg></span>
+                    <div>
+                        <strong id="home-push-title">Avisos ativados</strong>
+                        <span id="home-push-text">Você recebe o cardápio novo na hora.</span>
+                    </div>
+                    <button type="button" id="home-push-enable" class="btn-primary push-enable hidden">Ativar</button>
+                </div>
             </div>
             
             <div id="success-message" class="hidden success-card">
@@ -526,7 +566,7 @@
 
             <!-- ===== ABA FERIADOS (funcionário) ===== -->
             <section id="user-holidays-section" data-user-panel="holidays" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">📅 Feriados e Pontos Facultativos 2026</h2>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Feriados e Pontos Facultativos 2026</h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Calendário administrativo oficial de Mogi das Cruzes.</p>
                 <div id="user-holidays-list" class="space-y-1.5"></div>
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
@@ -535,7 +575,7 @@
             <!-- ===== ABA PAGAMENTO (funcionário) ===== -->
             <section id="user-payment-section" data-user-panel="payment" class="hidden transition-colors">
                 <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">💰 Dias de Pagamento 2026</h2>
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Dias de Pagamento 2026</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Escala oficial de pagamento e adiantamento.</p>
                     <div id="user-next-payment" class="hidden rounded-xl p-4 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 text-center"></div>
                     <div id="user-payment-table" class="space-y-1.5"></div>
@@ -544,7 +584,7 @@
 
                 <!-- Consulta RGF (contracheque público) -->
                 <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">🔍 Consultar Contracheque por RGF</h3>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">Consultar Contracheque por RGF</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Dados públicos do portal da transparência de Mogi das Cruzes.</p>
                     <form id="user-rgf-consult-form" class="flex flex-wrap gap-2 mb-4 items-end">
                        <input type="text" id="user-rgf-consult-input" placeholder="Digite o RGF ou nome (ex: 22823 ou Fernando)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
@@ -572,7 +612,7 @@
 
             <!-- ===== ABA PONTO (funcionário) ===== -->
             <section id="user-ponto-section" data-user-panel="ponto" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors text-center">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🕐 Folha de Ponto</h2>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Folha de Ponto</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Sistema oficial de registro e requerimentos (abonar faltas, justificativas).</p>
                 <a href="https://mogidascruzes.izeus.com.br/ponto" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-blue-600 dark:bg-blue-500 text-white font-bold text-lg px-8 py-4 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 shadow-md transition-transform transform active:scale-95 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0L21 3m-4.5 0H21v4.5"></path></svg>
@@ -586,7 +626,7 @@
 
                 <!-- Tela: identificação por RGF -->
                 <div id="fin-login" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🤑 Minhas Finanças</h2>
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Minhas Finanças</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Área privada. Só você acessa com seu RGF e sua senha.</p>
                     <form id="fin-identificar-form" class="flex flex-wrap gap-2 mb-2">
                         <input type="text" id="fin-rgf-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Digite seu RGF (ex: 22823)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
@@ -607,7 +647,7 @@
 
                 <!-- Tela: primeiro acesso (criar senha) -->
                 <div id="fin-cadastro" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🔐 Criar Senha</h2>
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Criar Senha</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Primeiro acesso. Crie uma senha numérica (mínimo 4 dígitos). Ninguém terá acesso aos seus dados sem ela.</p>
                     <form id="fin-cadastro-form" class="space-y-3">
                         <input type="password" id="fin-cad-senha1" inputmode="numeric" placeholder="Crie sua senha" class="w-full px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors" required>
@@ -629,7 +669,7 @@
                     <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
                         <div class="flex justify-between items-center mb-4">
                             <div>
-                                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">🤑 Minhas Finanças</h2>
+                                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Minhas Finanças</h2>
                                 <p id="fin-rgf-label" class="text-xs text-gray-500 dark:text-gray-400"></p>
                             </div>
                             <button id="fin-sair" class="text-sm text-red-500 font-bold hover:text-red-700 cursor-pointer">Sair</button>
@@ -645,11 +685,11 @@
                         <!-- Cards resumo -->
                         <div class="grid grid-cols-3 gap-2 mb-2">
                             <div class="rounded-lg p-3 text-center bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
-                                <p class="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase">💵 Dia 20</p>
+                                <p class="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase">Dia 20</p>
                                 <p id="fin-d20" class="text-sm font-bold text-green-700 dark:text-green-300">R$ 0,00</p>
                             </div>
                             <div class="rounded-lg p-3 text-center bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50">
-                                <p class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">💰 Dia 5</p>
+                                <p class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">Dia 5</p>
                                 <p id="fin-d5" class="text-sm font-bold text-blue-700 dark:text-blue-300">R$ 0,00</p>
                             </div>
                             <div class="rounded-lg p-3 text-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
@@ -689,8 +729,8 @@
             <!-- ===== BOTTOM BAR DO FUNCIONÁRIO (Sem rolagem) ===== -->
             <nav id="user-tabs" class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-lg p-1.5 no-print" aria-label="Seções do funcionário">
                 <button type="button" data-user-tab="menu" class="admin-tab-btn active">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15a8 8 0 0 1 16 0z"></path><path d="M2.5 18.5h19M12 7V5.5"></path></svg>
-                    <span>Cardápio</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"></path></svg>
+                    <span>Início</span>
                 </button>
                 <button type="button" data-user-tab="holidays" class="admin-tab-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
@@ -751,11 +791,11 @@
 
             <!-- Gerenciamento de Cardápio -->
             <section id="menu-management-section" data-admin-panel="menu" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">🖼️ Gerenciar Semanas e Cardápios</h2>
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">Gerenciar Semanas e Cardápios</h2>
                 <div class="grid md:grid-cols-2 gap-6">
                     <!-- Semana Atual -->
                     <div class="border border-gray-200 dark:border-zinc-800 rounded-xl p-5 bg-gray-50 dark:bg-zinc-950 flex flex-col transition-colors">
-                        <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2"><span>📌</span> Cardápio Ativo (Atual)</h3>
+                        <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">Cardápio Ativo (Atual)</h3>
                         <div class="flex-1">
                             <img id="admin-current-image" class="w-full h-40 object-cover rounded-lg mb-4 border dark:border-zinc-700 shadow-sm hidden" alt="Cardápio Atual" />
                             <p id="admin-current-status" class="text-sm text-gray-500 dark:text-gray-400 mb-4 italic font-medium">Nenhum cardápio ativo.</p>
@@ -772,7 +812,7 @@
 
                     <!-- Próxima Semana -->
                     <div class="border-2 border-blue-100 dark:border-blue-900/30 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 flex flex-col transition-colors">
-                        <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2"><span>🚀</span> Preparar Próxima Semana</h3>
+                        <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">Preparar Próxima Semana</h3>
                         <div class="flex-1">
                             <!-- APRIMORAMENTO: Upload de imagem com drag-and-drop e feedback -->
                             <div class="mb-4">
@@ -830,7 +870,7 @@
                             <!-- Recado do encarregado para os funcionários -->
                             <div class="mt-5 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 bg-gray-50 dark:bg-zinc-900/50">
                                 <h5 class="font-bold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
-                                    <span>💬</span> Recado para os funcionários
+                                    Recado para os funcionários
                                 </h5>
                                 <textarea id="proximaSemanaRecado" rows="2" placeholder="Ex: AMANHÃ O CARDÁPIO DE SEXTA SERÁ O DE QUINTA" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition-colors"></textarea>
                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Aparece na tela do cardápio dos funcionários (acima da imagem). Deixe vazio para não mostrar.</p>
@@ -849,11 +889,31 @@
                         </div>
                     </div>
                 </div>
+                <!-- Cardápio digitado: nomes dos pratos que os funcionários veem nos cartões -->
+                <div id="menutext-card" class="menutext-card">
+                    <div class="menutext-head">
+                        <div>
+                            <h3>Cardápio digitado</h3>
+                            <p>Os nomes dos pratos aparecem para os funcionários na hora de pedir.</p>
+                        </div>
+                        <div id="menutext-tabs" class="seg" role="group" aria-label="Semana">
+                            <button type="button" data-target="current" class="active">Semana atual</button>
+                            <button type="button" data-target="next">Próxima</button>
+                        </div>
+                    </div>
+                    <p id="menutext-status" class="menutext-status"></p>
+                    <div class="menutext-actions">
+                        <button type="button" id="menutext-ai" class="btn-primary btn-ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Preencher com IA</button>
+                        <button type="button" id="menutext-clear" class="btn-secondary">Limpar</button>
+                    </div>
+                    <div id="menutext-grid" class="menutext-grid"></div>
+                    <button type="button" id="menutext-save" class="btn-primary menutext-save">Salvar cardápio digitado</button>
+                </div>
             </section>
             
             <!-- Resumo de Status (pertence ao painel de Pedidos) -->
             <section id="order-status-section" data-admin-panel="orders" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4" id="status-section-title">📊 Status de Pedidos</h2>
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4" id="status-section-title">Status de Pedidos</h2>
                 <div id="order-status-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <p class="text-gray-500 dark:text-gray-400 font-medium">A carregar status dos pedidos...</p>
                 </div>
@@ -861,7 +921,7 @@
 
             <!-- Gerenciamento de Funcionários -->
             <section id="employee-management-section" data-admin-panel="employees" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">👥 Gerenciamento de Funcionários</h2>
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Gerenciamento de Funcionários</h2>
                 <!-- APRIMORAMENTO: Lista de funcionários com busca e ações em lote -->
                 <div class="mb-4">
                     <div class="flex justify-between items-center">
@@ -892,7 +952,7 @@
 
             <!-- ===== CONSULTA RGF (dados da prefeitura) ===== -->
             <section id="rgf-consult-section" data-admin-panel="rgf" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-1">🔍 Consulta RGF</h2>
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-1">Consulta RGF</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Dados públicos do portal da transparência de Mogi das Cruzes.</p>
 
                 <form id="rgf-consult-form" class="flex flex-wrap gap-2 mb-4">
@@ -907,12 +967,12 @@
             <!-- ===== ABA DESENVOLVEDOR (Dev Logs) ===== -->
             <section id="dev-panel-section" data-admin-panel="dev" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
                 <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 flex items-center gap-3">
-                    <span>🛠️</span> Desenvolvedor / Debug
+                    Desenvolvedor / Debug
                 </h2>
 
                 <!-- Aviso personalizado para os funcionarios (push no app e no site) -->
                 <div class="mb-6 p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">📣 Enviar aviso aos funcionários</h3>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">Enviar aviso aos funcionários</h3>
                     <form id="custom-notify-form" class="space-y-3">
                         <input id="custom-notify-title" type="text" maxlength="60" required placeholder="Título (ex.: Reunião amanhã)"
                             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-100">
@@ -931,10 +991,25 @@
                 <!-- Quem recebe as notificacoes -->
                 <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
                     <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">🔔 Quem recebe notificações</h3>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Quem recebe notificações</h3>
                         <button id="notify-stats-refresh" type="button" class="px-3 py-1 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 cursor-pointer">Atualizar</button>
                     </div>
                     <div id="notify-stats" class="text-sm text-gray-600 dark:text-gray-300">Toque em Atualizar.</div>
+                </div>
+
+                <!-- Inteligência artificial do cardápio digitado -->
+                <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Inteligência artificial</h3>
+                        <button id="ai-config-refresh" type="button" class="px-3 py-1 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 cursor-pointer">Atualizar</button>
+                    </div>
+                    <div id="ai-config-status" class="text-sm text-gray-600 dark:text-gray-300 mb-3">Toque em Atualizar.</div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Opcional: se a IA da Cloudflare falhar, o app tenta o Gemini. Crie uma chave grátis em aistudio.google.com/apikey (sem cartão) e cole abaixo. Ela fica guardada criptografada e só aparece o final.</p>
+                    <form id="ai-key-form" class="flex flex-wrap gap-2">
+                        <input id="ai-key-input" type="password" autocomplete="off" placeholder="Chave do Gemini" class="flex-1 min-w-0 basis-48 px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-100">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg cursor-pointer">Salvar chave</button>
+                        <button type="button" id="ai-key-clear" class="hidden px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-bold rounded-lg cursor-pointer">Apagar</button>
+                    </form>
                 </div>
 
                 <div class="mb-6">
@@ -1187,7 +1262,7 @@
     <!-- Modal: Excluir Lançamento (Finanças) -->
     <div id="fin-excluir-modal" class="modal-overlay hidden no-print">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">🗑️ Excluir Lançamento</h2>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Excluir Lançamento</h2>
             <p id="fin-excluir-msg" class="text-sm text-gray-600 dark:text-gray-400 mb-4"></p>
             <div class="space-y-2">
                 <button type="button" id="fin-excluir-um" class="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">📌 Só este mês</button>
@@ -1203,7 +1278,7 @@
     <!-- Modal: Calculadora -->
     <div id="fin-calc-modal" class="modal-overlay hidden no-print">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">🧮 Calculadora</h2>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Calculadora</h2>
             <div id="fin-calc-tipo-modal">
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Escolha o que quer simular:</p>
                 <div class="space-y-2">
@@ -1263,18 +1338,20 @@
     <script src="js/firebase.js?v=2026.1"></script>
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.21"></script>
-    <script src="js/order.js?v=2026.19"></script>
-    <script src="js/userhelp.js?v=2026.15"></script>
-    <script src="js/admin.js?v=2026.20"></script>
+    <script src="js/ui.js?v=2026.22"></script>
+    <script src="js/order.js?v=2026.20"></script>
+    <script src="js/userhelp.js?v=2026.16"></script>
+    <script src="js/home.js?v=2026.1"></script>
+    <script src="js/admin.js?v=2026.21"></script>
     <script src="js/financas.js?v=2026.11"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.14"></script>
-    <script src="js/pushRegistration.js?v=2026.13"></script>
+    <script src="js/pushRegistration.js?v=2026.14"></script>
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
+    <script src="js/menuText.js?v=2026.1"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
-    <script src="js/app.js?v=2026.18"></script>
+    <script src="js/app.js?v=2026.19"></script>
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">
             <!-- Topo: fecha + controles de zoom -->
             <div class="flex items-center justify-between p-3 shrink-0">

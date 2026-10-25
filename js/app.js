@@ -185,6 +185,7 @@
               const preview = document.getElementById('imagePreview');
               const previewContainer = document.getElementById('imagePreviewContainer');
               if (preview) preview.src = st.finalImageBase64;
+              if (global.renderMenuTextEditor) global.renderMenuTextEditor();
               if (previewContainer) previewContainer.classList.remove('hidden');
               const dimEl = document.getElementById('imageDimensions');
               const sizeEl = document.getElementById('imageSize');
@@ -480,7 +481,7 @@
         const btn = document.getElementById('deleteNextWeekBtn');
         btn.disabled = true; btn.textContent = "A apagar...";
         try {
-          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], nextWeekMonday: null, targetRotationDate: null, recado: '' });
+          await fb.updateDoc(global.getMenuDocRef(), { nextMenuImageBase64: '', nextHolidays: [], nextWeekMonday: null, targetRotationDate: null, recado: '', nextMenuText: {} });
           const snap = await fb.getDocs(fb.collection(global.db, "pedidosDaSemana"));
           const batch = fb.writeBatch(global.db);
           snap.forEach(d => { if (d.data().isNextWeek === true) batch.delete(d.ref); });

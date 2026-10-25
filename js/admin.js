@@ -72,6 +72,7 @@
           currentStatus.textContent = "Nenhum cardápio ativo no momento.";
         }
       }
+      if (global.renderMenuTextEditor) global.renderMenuTextEditor();
 
       if (scheduledDateSpan) {
         if (st.currentMenuData.targetRotationDate) {

@@ -56,6 +56,8 @@
     try {
       const perm = await Push.requestPermissions();
       console.log('[pushRegistration] Permissão nativa:', perm.receive);
+      global.__pushStatus = perm.receive;
+      if (global.renderHome) global.renderHome();
       if (perm.receive !== 'granted') return;
 
       if (!nativeListenersAdded) {
@@ -128,27 +130,21 @@
     }
   }
 
-  // Botao "Ativar notificacoes" no site: o iPhone (e varios navegadores) so deixam pedir
-  // permissao depois de um toque do usuario
+  // Site: o iPhone (e varios navegadores) so deixam pedir permissao depois de um toque.
+  // O botao "Ativar" fica no cartao de avisos da tela de inicio (home.js).
   function showEnableButton() {
     if (!webPushSupported() || Notification.permission !== 'default') return;
-    if (document.getElementById('enable-notifications-btn')) return;
-    const btn = document.createElement('button');
-    btn.id = 'enable-notifications-btn';
-    btn.type = 'button';
-    btn.textContent = '🔔 Ativar notificações';
-    btn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:1000;' +
-      'background:#2563eb;color:#fff;border:0;border-radius:9999px;padding:12px 20px;font-weight:700;' +
-      'box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:15px;';
-    btn.addEventListener('click', async () => {
+    global.__pushStatus = 'default';
+    global.enableWebPush = async () => {
       const perm = await Notification.requestPermission();
-      btn.remove();
+      global.__pushStatus = perm;
       if (perm === 'granted') {
         global.showToast && global.showToast('Notificações ativadas!', 'success');
         registerWebPush();
       }
-    });
-    document.body.appendChild(btn);
+      if (global.renderHome) global.renderHome();
+    };
+    if (global.renderHome) global.renderHome();
   }
 
   // Re-registra/associa token ao digitar RGF
