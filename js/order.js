@@ -165,6 +165,8 @@
   // ===== Modal de confirmacao do pedido =====
   function openConfirmationModal() {
     const st = S();
+    // Finalizado de dentro do zoom: fecha o visualizador, senão a confirmação abre por trás dele
+    if (typeof MENU_VIEWER !== 'undefined' && MENU_VIEWER.isOpen && typeof menuViewerClose === 'function') menuViewerClose();
     st.tempOrderData = {
       employeeName: document.getElementById('employeeName').value.trim(),
       employeeRGF: document.getElementById('employeeRGF').value.trim(),

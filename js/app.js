@@ -473,7 +473,7 @@
     document.getElementById('generateReportBtn').addEventListener('click', generateAndShareReport);
     document.getElementById('notifyWhatsAppBtn').addEventListener('click', handleWhatsAppNotification);
     document.getElementById('deleteNextWeekBtn')?.addEventListener('click', async () => {
-      showCustomConfirm("Tem a certeza? Isso vai apagar o cardápio da próxima semana e todos os pedidos já feitos antecipadamente.", async () => {
+      showCustomConfirm("⚠️ APAGAR o cardápio da próxima semana? Os funcionários deixam de ver o cardápio novo e TODOS os pedidos já feitos para a próxima semana serão apagados.", async () => {
         if (!auth.currentUser) return;
         const btn = document.getElementById('deleteNextWeekBtn');
         btn.disabled = true; btn.textContent = "A apagar...";
@@ -485,7 +485,7 @@
           await batch.commit();
           showToast("Próxima semana apagada.", "success");
         } catch (error) { showToast("Erro ao apagar.", "error"); }
-        finally { btn.disabled = false; btn.textContent = "🗑️ Cancelar / Apagar Próxima Semana"; }
+        finally { btn.disabled = false; btn.textContent = "🗑️ Apagar cardápio da próxima semana"; }
       });
     });
 

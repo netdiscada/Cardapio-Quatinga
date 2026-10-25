@@ -196,7 +196,7 @@
         }
     </style>
     <!-- Console da aba Dev: carregado antes de tudo para registrar também os erros de inicialização -->
-    <script src="js/devConsole.js?v=2026.15"></script>
+    <script src="js/devConsole.js?v=2026.16"></script>
     <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
     <script src="vendor/firebase-app-compat.js"></script>
     <script src="vendor/firebase-firestore-compat.js"></script>
@@ -357,59 +357,96 @@
                 }
 
                 /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
-                /* Wizard dentro do viewer: cartão ESCURO com texto claro, igual no modo claro e
-                   no escuro (antes o modo escuro deixava o nome das opções branco no fundo branco) */
+                /* Visualizador segue o tema escolhido: modo claro = fundo claro, cartão branco e
+                   texto escuro; modo noturno = fundo preto e cartão escuro com texto claro */
+                #menu-viewer-modal { background: #f4f4f5; }
+                #menu-viewer-modal #viewer-zoom-in,
+                #menu-viewer-modal #viewer-zoom-out,
+                #menu-viewer-modal #viewer-reset,
+                #menu-viewer-modal #viewer-close-btn {
+                    background: rgba(0,0,0,0.08) !important;
+                    color: #111827 !important;
+                }
                 #menu-viewer-buttons > #order-wizard-container {
-                    background: #1f1f23 !important;
-                    border: 1px solid #2e2e33 !important;
+                    background: #ffffff !important;
+                    border: 1px solid #e5e7eb !important;
                     border-radius: 1rem 1rem 0 0;
-                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
                     margin-bottom: 0 !important;
                     max-height: 42vh;
                     overflow-y: auto;
                     padding: 0.75rem !important;
                 }
                 #menu-viewer-buttons #wizard-day-title {
-                    color: #93c5fd !important;
+                    color: #2563eb !important;
                     margin-bottom: 0.5rem !important;
                 }
                 /* Botões do wizard grandes e fáceis de tocar (idosos) */
                 #menu-viewer-buttons .wizard-btn {
                     min-height: 56px;
                     font-size: 1rem;
-                    background: #2a2a30 !important;
-                    border: 2px solid #3f3f46 !important;
-                    box-shadow: none !important;
+                    background: #ffffff !important;
+                    border: 2px solid #e5e7eb !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
                 }
                 #menu-viewer-buttons .wizard-btn:hover,
                 #menu-viewer-buttons .wizard-btn:active {
+                    border-color: #2563eb !important;
+                    background: #eff6ff !important;
+                }
+                #menu-viewer-buttons .wizard-btn p:first-child { color: #111827 !important; }
+                #menu-viewer-buttons .wizard-btn p + p { color: #4b5563 !important; }
+                #menu-viewer-buttons #wizard-notes {
+                    background: #ffffff !important;
+                    border-color: #d1d5db !important;
+                    color: #111827 !important;
+                }
+                #menu-viewer-buttons #wizard-notes::placeholder { color: #6b7280 !important; }
+                #menu-viewer-buttons #wizard-progress .bg-gray-300 { background: #d1d5db !important; }
+
+                /* ----- Modo noturno ----- */
+                html.dark #menu-viewer-modal #viewer-zoom-in,
+                html.dark #menu-viewer-modal #viewer-zoom-out,
+                html.dark #menu-viewer-modal #viewer-reset,
+                html.dark #menu-viewer-modal #viewer-close-btn {
+                    background: rgba(255,255,255,0.15) !important;
+                    color: #ffffff !important;
+                }
+                html.dark #menu-viewer-buttons > #order-wizard-container {
+                    background: #1f1f23 !important;
+                    border-color: #2e2e33 !important;
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+                }
+                html.dark #menu-viewer-buttons #wizard-day-title { color: #93c5fd !important; }
+                html.dark #menu-viewer-buttons .wizard-btn {
+                    background: #2a2a30 !important;
+                    border-color: #3f3f46 !important;
+                    box-shadow: none !important;
+                }
+                html.dark #menu-viewer-buttons .wizard-btn:hover,
+                html.dark #menu-viewer-buttons .wizard-btn:active {
                     border-color: #60a5fa !important;
                     background: #30303a !important;
                 }
-                #menu-viewer-buttons .wizard-btn p:first-child {
-                    color: #ffffff !important;
-                }
-                #menu-viewer-buttons .wizard-btn p + p {
-                    color: #c4c4cc !important;
-                }
-                #menu-viewer-buttons #wizard-notes {
+                html.dark #menu-viewer-buttons .wizard-btn p:first-child { color: #ffffff !important; }
+                html.dark #menu-viewer-buttons .wizard-btn p + p { color: #c4c4cc !important; }
+                html.dark #menu-viewer-buttons #wizard-notes {
                     background: #2a2a30 !important;
                     border-color: #3f3f46 !important;
                     color: #ffffff !important;
                 }
-                #menu-viewer-buttons #wizard-notes::placeholder {
-                    color: #a1a1aa !important;
-                }
-                /* Barra de progresso do wizard visível no fundo escuro */
-                #menu-viewer-buttons #wizard-progress .bg-gray-300 {
-                    background: #52525b !important;
-                }
+                html.dark #menu-viewer-buttons #wizard-notes::placeholder { color: #a1a1aa !important; }
+                html.dark #menu-viewer-buttons #wizard-progress .bg-gray-300 { background: #52525b !important; }
                 /* Container do submit (revisar pedido) também entra no rodapé */
                 #menu-viewer-buttons > #submitButtonContainer {
                     margin-top: 0.5rem;
                 }
                 /* Garante fundo sólido no rodapé do viewer para não "sumir" os botões */
                 #menu-viewer-buttons {
+                    background: #f4f4f5 !important;
+                    border-top: 1px solid #e5e7eb !important;
+                }
+                html.dark #menu-viewer-buttons {
                     background: #18181b !important;
                     border-top: 1px solid #27272a !important;
                 }
@@ -864,7 +901,7 @@
                             Salvar Cardápio para a Próxima Semana
                         </button>
                         <button id="deleteNextWeekBtn" class="mt-2 w-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold py-2 px-4 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition shadow-sm hidden cursor-pointer">
-                            🗑️ Cancelar / Apagar Próxima Semana
+                            🗑️ Apagar cardápio da próxima semana
                         </button>
                         <div id="whatsapp-notification-container" class="mt-4 hidden">
                             <button id="notifyWhatsAppBtn" class="w-full bg-green-500 dark:bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 dark:hover:bg-green-500 flex items-center justify-center gap-2 text-sm transition-colors cursor-pointer">
@@ -1285,7 +1322,7 @@
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
     <script src="js/ui.js?v=2026.11"></script>
-    <script src="js/order.js?v=2026.13"></script>
+    <script src="js/order.js?v=2026.17"></script>
     <script src="js/userhelp.js?v=2026.15"></script>
     <script src="js/admin.js?v=2026.15"></script>
     <script src="js/financas.js?v=2026.11"></script>
@@ -1295,10 +1332,10 @@
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
-    <script src="js/app.js?v=2026.15"></script>
-<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:#000;">
+    <script src="js/app.js?v=2026.17"></script>
+<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">
             <!-- Topo: fecha + controles de zoom -->
-            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
+            <div class="flex items-center justify-between p-3 shrink-0">
                 <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
                 <div class="flex items-center gap-2">
                     <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
@@ -1311,7 +1348,7 @@
                 <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none" draggable="false" style="transform-origin:center center;">
             </div>
             <!-- Botões de escolha FIXOS embaixo -->
-            <div id="menu-viewer-buttons" class="shrink-0 p-3 pb-4 max-h-[45vh] overflow-y-auto" style="background:#18181b;">
+            <div id="menu-viewer-buttons" class="shrink-0 p-3 pb-4 max-h-[45vh] overflow-y-auto">
             </div>
         </div>
     <script>
@@ -1328,7 +1365,7 @@
                 });
                 return Promise.all(antigos.map(function(registration) { return registration.unregister(); }));
             }).catch(function() {}).then(function() {
-                return navigator.serviceWorker.register('./sw-v2.js?v=4');
+                return navigator.serviceWorker.register('./sw-v2.js?v=5');
             }).catch(function() {});
         }
 
