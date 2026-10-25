@@ -254,7 +254,7 @@
         return;
       }
       const holidays = st.viewingNextWeek ? (st.currentMenuData.nextHolidays || []) : (st.currentMenuData.holidays || []);
-      let html = `<div style="background-color: white; color: black; padding: 20px; min-width: 700px; font-family: 'Poppins', sans-serif;"><h1 style="font-size: 18pt; text-align: center; margin-bottom: 15px; font-weight: 700;">Cardápio Quatinga</h1>`;
+      let html = `<div style="background-color: white; color: black; padding: 20px; min-width: 700px; font-family: 'Plus Jakarta Sans', sans-serif;"><h1 style="font-size: 18pt; text-align: center; margin-bottom: 15px; font-weight: 700;">Cardápio Quatinga</h1>`;
       weekDays.forEach(day => {
         const dayId = getDayId(day);
         if (holidays.includes(dayId)) return;

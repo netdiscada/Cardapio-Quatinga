@@ -38,16 +38,26 @@
 
   // ===== Dark mode =====
   const darkModeToggleBtn = document.getElementById('darkModeToggle');
+  // Tema: Automático (segue o celular) -> Claro -> Escuro (theme.js)
+  const THEME_LABELS = {
+    auto: { nome: 'Automático', curto: 'Auto', icone: '<circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"></path>' },
+    light: { nome: 'Claro', curto: 'Claro', icone: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>' },
+    dark: { nome: 'Escuro', curto: 'Escuro', icone: '<path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"></path>' }
+  };
   function updateDarkModeButton() {
-    if (document.documentElement.classList.contains('dark')) { darkModeToggleBtn.innerHTML = '☀️ Modo Claro'; }
-    else { darkModeToggleBtn.innerHTML = '🌙 Modo Noturno'; }
+    if (!darkModeToggleBtn) return;
+    const mode = global.Theme ? global.Theme.getMode() : 'light';
+    const t = THEME_LABELS[mode] || THEME_LABELS.light;
+    darkModeToggleBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${t.icone}</svg><span>${t.curto}</span>`;
+    darkModeToggleBtn.setAttribute('aria-label', `Tema: ${t.nome}. Toque para trocar`);
   }
   function toggleDarkMode() {
-    document.documentElement.classList.toggle('dark');
-    if (document.documentElement.classList.contains('dark')) { localStorage.setItem('theme', 'dark'); }
-    else { localStorage.setItem('theme', 'light'); }
+    if (global.Theme) global.Theme.cycle();
     updateDarkModeButton();
+    const t = THEME_LABELS[global.Theme ? global.Theme.getMode() : 'light'];
+    showToast(`Tema: ${t.nome}`, 'info', 1800);
   }
+  global.addEventListener('themechange', updateDarkModeButton);
 
   // ===== Wizard do funcionario =====
   function renderWizardStep(index) {

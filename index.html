@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Cardápio Quatinga</title>
     
     <!-- PWA / Web App Tags -->
@@ -13,25 +13,31 @@
     <link rel="manifest" id="pwa-manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
 
-    <!-- Prevenção de Piscar Branco na Troca de Tema -->
-    <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    </script>
+    <!-- Tema (Automático/Claro/Escuro): antes de tudo, para abrir sem piscar -->
+    <script src="js/theme.js?v=2026.20"></script>
     
     <!-- Tailwind CSS CDN -->
     <script src="vendor/tailwindcss.js"></script>
     <script>
-        tailwind.config = { darkMode: 'class' }
+        // Paleta "azul-noite clean": blue = azul do app; gray = neutros frios do modo claro;
+        // slate/zinc = azul-noite do modo escuro (antes era cinza/preto)
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'], display: ['Fraunces', 'Georgia', 'serif'] },
+                colors: {
+                    blue: { 50: '#EEF3FF', 100: '#E0E8FF', 200: '#C7D4FE', 300: '#A3B8FC', 400: '#6E8EFB', 500: '#4A6FF3', 600: '#2F5BEA', 700: '#2347C9', 800: '#1E3BA3', 900: '#1E3581', 950: '#16224F' },
+                    gray: { 50: '#F8FAFD', 100: '#F1F4F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B', 900: '#0F172A', 950: '#070B14' },
+                    slate: { 50: '#F4F6FB', 100: '#EEF2F8', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#9AA8C2', 500: '#6B7A96', 600: '#4A5A7A', 700: '#2E3B57', 800: '#1B2740', 900: '#131C2E', 950: '#0B1220' },
+                    zinc: { 50: '#F4F6FB', 100: '#EEF2F8', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#9AA8C2', 500: '#6B7A96', 600: '#4A5A7A', 700: '#2E3B57', 800: '#1B2740', 900: '#131C2E', 950: '#0B1220' }
+                },
+                borderRadius: { lg: '0.875rem', xl: '1.125rem', '2xl': '1.375rem' }
+            } }
+        }
     </script>
 
     <!-- Google Fonts -->
-    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link href="vendor/fonts/fonts.css?v=2026.20" rel="stylesheet">
     
     <!-- Bibliotecas Externas: Compressão de Imagem e Cropper.js -->
     <script src="vendor/browser-image-compression.js"></script>
@@ -44,7 +50,7 @@
 
     <style>
         html { scroll-behavior: smooth; }
-        body { font-family: 'Poppins', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -205,7 +211,7 @@
     <link rel="stylesheet" href="css/styles.css">
 <style>
         html { scroll-behavior: smooth; }
-        body { font-family: 'Poppins', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -477,31 +483,36 @@
                 }
             </style>
 <script src="js/menu-viewer.js?v=2026.15"></script>
+    <link rel="stylesheet" href="css/theme.css?v=2026.20">
 </head>
-<body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
     <!-- Banner Offline -->
     <div id="offline-banner" class="hidden fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center text-xs font-bold py-1 z-[100] shadow-md transition-all">
         ⚡ Sem internet. Modo offline ativado.
     </div>
 
-    <!-- Botões Flutuantes Superiores -->
-    <div class="absolute top-0 left-0 right-0 w-full z-50 p-2 flex justify-between no-print pointer-events-none">
-        <button id="darkModeToggle" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-            🌙 Modo Noturno
-        </button>
-        <button id="switchToAdmin" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-            ⚙️ ADM
-        </button>
-    </div>
+    <!-- Barra do topo: marca, tema e acesso do ADM -->
+    <header id="app-topbar" class="no-print">
+        <div class="brand">
+            <img src="icon.png" alt="" width="40" height="40" style="width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;">
+            <div style="display: flex; flex-direction: column; min-width: 0;">
+                <span class="brand-name">Delícias Urbanas</span>
+                <span class="brand-sub">Cardápio Quatinga</span>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button id="darkModeToggle" type="button" class="icon-btn" aria-label="Tema do app"></button>
+            <button id="switchToAdmin" type="button" class="icon-btn" aria-label="Entrar no painel do ADM"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg><span>ADM</span></button>
+        </div>
+    </header>
 
-    <div id="app-container" class="container mx-auto max-w-4xl p-2 sm:p-6 pb-20 mt-8 sm:mt-6">
+    <div id="app-container" class="container mx-auto max-w-4xl p-2 sm:p-6 pb-20">
         
         <!-- ================= VISÃO DO USUÁRIO ================= -->
         <div id="user-view" class="no-print">
             <div id="form-container">
                 <div class="text-center mb-6 mt-4">
-                    <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
                     <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
                     <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
                         <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
@@ -750,23 +761,23 @@
             <!-- ===== BOTTOM BAR DO FUNCIONÁRIO (Sem rolagem) ===== -->
             <nav id="user-tabs" class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-lg p-1.5 no-print" aria-label="Seções do funcionário">
                 <button type="button" data-user-tab="menu" class="admin-tab-btn active">
-                    <span class="text-lg leading-none">🍽️</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15a8 8 0 0 1 16 0z"></path><path d="M2.5 18.5h19M12 7V5.5"></path></svg>
                     <span>Cardápio</span>
                 </button>
                 <button type="button" data-user-tab="holidays" class="admin-tab-btn">
-                    <span class="text-lg leading-none">📅</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
                     <span>Feriados</span>
                 </button>
                 <button type="button" data-user-tab="payment" class="admin-tab-btn">
-                    <span class="text-lg leading-none">💰</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="3"></rect><circle cx="12" cy="12.5" r="2.5"></circle></svg>
                     <span>Pagamento</span>
                 </button>
                 <button type="button" data-user-tab="ponto" class="admin-tab-btn">
-                    <span class="text-lg leading-none">🕐</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
                     <span>Ponto</span>
                 </button>
                 <button type="button" data-user-tab="financas" class="admin-tab-btn">
-                    <span class="text-lg leading-none">🤑</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"></path><path d="M8 15l3-4 3 2 5-6"></path></svg>
                     <span>Finanças</span>
                 </button>
             </nav>
@@ -788,24 +799,24 @@
             <!-- ===== BOTTOM BAR ADM FIXA (Sem rolagem) ===== -->
             <nav id="admin-tabs" aria-label="Seções do painel">
                 <button type="button" data-admin-tab="menu" class="admin-tab-btn active">
-                    <span class="text-lg leading-none">🖼️</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15a8 8 0 0 1 16 0z"></path><path d="M2.5 18.5h19M12 7V5.5"></path></svg>
                     <span>Cardápio</span>
                 </button>
                 <button type="button" data-admin-tab="employees" class="admin-tab-btn">
-                    <span class="text-lg leading-none">👥</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"></path></svg>
                     <span>Funcionários</span>
                 </button>
                 <button type="button" data-admin-tab="rgf" class="admin-tab-btn">
-                    <span class="text-lg leading-none">🔍</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
                     <span>RGF</span>
                 </button>
                 <button type="button" data-admin-tab="orders" class="admin-tab-btn">
-                    <span class="text-lg leading-none">📋</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"></rect><path d="M9 4h6v3H9zM9 13l2 2 4-4"></path></svg>
                     <span>Pedidos</span>
                     <span id="ordersBadge" class="admin-badge hidden">0</span>
                 </button>
                 <button type="button" data-admin-tab="dev" class="admin-tab-btn">
-                    <span class="text-lg leading-none">🛠️</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"></path></svg>
                     <span>Dev</span>
                 </button>
             </nav>
@@ -1321,10 +1332,10 @@
     <script src="js/firebase.js?v=2026.1"></script>
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.11"></script>
+    <script src="js/ui.js?v=2026.20"></script>
     <script src="js/order.js?v=2026.18"></script>
     <script src="js/userhelp.js?v=2026.15"></script>
-    <script src="js/admin.js?v=2026.15"></script>
+    <script src="js/admin.js?v=2026.20"></script>
     <script src="js/financas.js?v=2026.11"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.14"></script>
@@ -1365,7 +1376,7 @@
                 });
                 return Promise.all(antigos.map(function(registration) { return registration.unregister(); }));
             }).catch(function() {}).then(function() {
-                return navigator.serviceWorker.register('./sw-v2.js?v=5');
+                return navigator.serviceWorker.register('./sw-v2.js?v=6');
             }).catch(function() {});
         }
 
