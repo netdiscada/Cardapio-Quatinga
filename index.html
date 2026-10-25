@@ -400,7 +400,7 @@
                 }
             </style>
 <script src="js/menu-viewer.js?v=2026.16"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.23">
+    <link rel="stylesheet" href="css/theme.css?v=2026.24">
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -753,16 +753,16 @@
 
         <!-- ================= VISÃO DO ADMINISTRADOR ================= -->
         <div id="admin-view" class="hidden no-print">
-            <header class="text-center border-b dark:border-zinc-800 pb-6 mb-6 mt-4">
-                <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100">Painel do Administrador</h1>
-                <p class="text-lg text-gray-600 dark:text-gray-400 mt-1 font-medium">Delícias Urbanas</p>
-                <div class="mt-4">
-                    <button id="adminLogoutBtn" class="bg-red-500 dark:bg-red-600 text-white font-bold text-sm px-4 py-2 rounded-lg hover:bg-red-600 dark:hover:bg-red-500 transition-colors cursor-pointer">Sair do Painel</button>
+            <header class="adm-top">
+                <div class="home-greeting">
+                    <span id="adm-date"></span>
+                    <h1 id="adm-hello">Painel do ADM</h1>
+                </div>
+                <div class="adm-actions">
+                    <button type="button" id="switchToUserFromAdmin" class="btn-ghost">Ver como funcionário</button>
+                    <button type="button" id="adminLogoutBtn" class="btn-ghost danger">Sair</button>
                 </div>
             </header>
-            <div class="mb-8">
-                <button id="switchToUserFromAdmin" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">⬅️ Voltar para o Cardápio (Visão Usuário)</button>
-            </div>
 
             <!-- ===== BOTTOM BAR ADM FIXA (Sem rolagem) ===== -->
             <nav id="admin-tabs" aria-label="Seções do painel">
@@ -791,10 +791,27 @@
 
             <!-- Gerenciamento de Cardápio -->
             <section id="menu-management-section" data-admin-panel="menu" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">Gerenciar Semanas e Cardápios</h2>
+                <div id="adm-hero" class="home-hero">
+                    <div class="hero-top">
+                        <span id="adm-hero-kicker">Esta semana</span>
+                        <span id="adm-hero-range" class="hero-chip"></span>
+                    </div>
+                    <div class="hero-body">
+                        <h2 id="adm-hero-title">Carregando pedidos...</h2>
+                        <p id="adm-hero-text"></p>
+                    </div>
+                    <button type="button" class="hero-btn" data-go-admin-tab="orders"><span>Ver pedidos</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                </div>
+                <div class="home-mini adm-mini">
+                    <button type="button" class="mini-card" data-pop="admin-block-next" data-pop-title="Próxima semana"><span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15l-3-3c1-4 4-8 9-9 0 5-4 8-8 9"></path><path d="M9 12H5l2-4h4M12 15v4l4-2v-4"></path></svg></span><span class="mini-label">Próxima semana</span><span id="adm-next-title" class="mini-title">Lançar cardápio</span><span id="adm-next-sub" class="mini-sub">foto, feriados e recado</span></button>
+                    <button type="button" class="mini-card" data-pop="admin-block-current" data-pop-title="Cardápio ativo"><span class="mini-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M21 16l-5-5-8 8"></path></svg></span><span class="mini-label">Cardápio ativo</span><span id="adm-cur-title" class="mini-title">Semana atual</span><span id="adm-cur-sub" class="mini-sub">ver e virar semana</span></button>
+                    <button type="button" class="mini-card" data-pop="menutext-card" data-pop-title="Cardápio digitado"><span class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M5 10.5h14M5 15h9M5 19.5h6"></path></svg></span><span class="mini-label">Cardápio digitado</span><span id="adm-text-title" class="mini-title">Nomes dos pratos</span><span id="adm-text-sub" class="mini-sub">preencher com IA</span></button>
+                    <button type="button" class="mini-card" data-go-admin-tab="orders"><span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="3"></rect><path d="M8.5 9l2 2 4-4M8.5 15.5h7"></path></svg></span><span class="mini-label">Pedidos</span><span id="adm-orders-title" class="mini-title">—</span><span id="adm-orders-sub" class="mini-sub">quem já pediu</span></button>
+                </div>
+                <div id="adm-pop-holder" class="hidden">
                 <div class="grid md:grid-cols-2 gap-6">
                     <!-- Semana Atual -->
-                    <div class="border border-gray-200 dark:border-zinc-800 rounded-xl p-5 bg-gray-50 dark:bg-zinc-950 flex flex-col transition-colors">
+                    <div id="admin-block-current" class="border border-gray-200 dark:border-zinc-800 rounded-xl p-5 bg-gray-50 dark:bg-zinc-950 flex flex-col transition-colors">
                         <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">Cardápio Ativo (Atual)</h3>
                         <div class="flex-1">
                             <img id="admin-current-image" class="w-full h-40 object-cover rounded-lg mb-4 border dark:border-zinc-700 shadow-sm hidden" alt="Cardápio Atual" />
@@ -811,7 +828,7 @@
                     </div>
 
                     <!-- Próxima Semana -->
-                    <div class="border-2 border-blue-100 dark:border-blue-900/30 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 flex flex-col transition-colors">
+                    <div id="admin-block-next" class="border-2 border-blue-100 dark:border-blue-900/30 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 flex flex-col transition-colors">
                         <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">Preparar Próxima Semana</h3>
                         <div class="flex-1">
                             <!-- APRIMORAMENTO: Upload de imagem com drag-and-drop e feedback -->
@@ -909,6 +926,7 @@
                     <div id="menutext-grid" class="menutext-grid"></div>
                     <button type="button" id="menutext-save" class="btn-primary menutext-save">Salvar cardápio digitado</button>
                 </div>
+                </div>
             </section>
             
             <!-- Resumo de Status (pertence ao painel de Pedidos) -->
@@ -971,7 +989,13 @@
                 </h2>
 
                 <!-- Aviso personalizado para os funcionarios (push no app e no site) -->
-                <div class="mb-6 p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40">
+                <div class="home-mini adm-mini">
+                    <button type="button" class="mini-card" data-pop="dev-block-notify" data-pop-title="Enviar aviso"><span class="mini-icon primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l7 4V6L7 10z"></path><path d="M18 9a4 4 0 0 1 0 6"></path></svg></span><span class="mini-label">Avisos</span><span id="dev-notify-title" class="mini-title">Enviar aviso</span><span id="dev-notify-sub" class="mini-sub">para todos os funcionários</span></button>
+                    <button type="button" class="mini-card" data-pop="dev-block-stats" data-pop-title="Quem recebe notificações"><span class="mini-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg></span><span class="mini-label">Notificações</span><span id="dev-stats-title" class="mini-title">Quem recebe</span><span id="dev-stats-sub" class="mini-sub">aparelhos com aviso</span></button>
+                    <button type="button" class="mini-card" data-pop="dev-block-ai" data-pop-title="Inteligência artificial"><span class="mini-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span><span class="mini-label">IA do cardápio</span><span id="dev-ai-title" class="mini-title">Configurar</span><span id="dev-ai-sub" class="mini-sub">Cloudflare e Gemini</span></button>
+                </div>
+                <div id="dev-pop-holder" class="hidden">
+                <div id="dev-block-notify" class="mb-6 p-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40">
                     <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">Enviar aviso aos funcionários</h3>
                     <form id="custom-notify-form" class="space-y-3">
                         <input id="custom-notify-title" type="text" maxlength="60" required placeholder="Título (ex.: Reunião amanhã)"
@@ -989,7 +1013,7 @@
                 </div>
 
                 <!-- Quem recebe as notificacoes -->
-                <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+                <div id="dev-block-stats" class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Quem recebe notificações</h3>
                         <button id="notify-stats-refresh" type="button" class="px-3 py-1 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 cursor-pointer">Atualizar</button>
@@ -998,7 +1022,7 @@
                 </div>
 
                 <!-- Inteligência artificial do cardápio digitado -->
-                <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+                <div id="dev-block-ai" class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Inteligência artificial</h3>
                         <button id="ai-config-refresh" type="button" class="px-3 py-1 text-sm font-semibold rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 cursor-pointer">Atualizar</button>
@@ -1010,6 +1034,7 @@
                         <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg cursor-pointer">Salvar chave</button>
                         <button type="button" id="ai-key-clear" class="hidden px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-bold rounded-lg cursor-pointer">Apagar</button>
                     </form>
+                </div>
                 </div>
 
                 <div class="mb-6">
@@ -1069,6 +1094,17 @@
 
     <!-- Modals -->
     <!-- Modal de Zoom da Imagem -->
+    <!-- Janela do painel do ADM: recebe o bloco do mini cartão tocado -->
+    <div id="adm-pop" class="modal-overlay sheet-overlay hidden no-print">
+        <section class="sheet adm-sheet" aria-labelledby="adm-pop-title">
+            <div class="adm-sheet-head">
+                <h2 id="adm-pop-title" class="sheet-title"></h2>
+                <button type="button" id="adm-pop-close" class="icon-btn" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+            </div>
+            <div id="adm-pop-body"></div>
+        </section>
+    </div>
+
     <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
         <div class="modal-content">
             <img id="zoomed-image" src="" alt="Imagem Ampliada">
@@ -1338,18 +1374,19 @@
     <script src="js/firebase.js?v=2026.1"></script>
     <script src="js/db.js?v=2026.15"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.22"></script>
+    <script src="js/ui.js?v=2026.23"></script>
     <script src="js/order.js?v=2026.20"></script>
-    <script src="js/userhelp.js?v=2026.16"></script>
-    <script src="js/home.js?v=2026.1"></script>
-    <script src="js/admin.js?v=2026.21"></script>
+    <script src="js/userhelp.js?v=2026.17"></script>
+    <script src="js/home.js?v=2026.2"></script>
+    <script src="js/admin.js?v=2026.22"></script>
     <script src="js/financas.js?v=2026.11"></script>
     <script src="js/notificationChecker.js?v=2026.13"></script>
     <script src="js/notificationTrigger.js?v=2026.14"></script>
-    <script src="js/pushRegistration.js?v=2026.14"></script>
+    <script src="js/pushRegistration.js?v=2026.15"></script>
     <script src="js/installHelper.js?v=2026.14"></script>
     <script src="js/adminNotify.js?v=2026.14"></script>
-    <script src="js/menuText.js?v=2026.1"></script>
+    <script src="js/menuText.js?v=2026.2"></script>
+    <script src="js/adminHome.js?v=2026.1"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
     <script src="js/app.js?v=2026.19"></script>
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">

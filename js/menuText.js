@@ -64,7 +64,7 @@
     btn.disabled = true;
     const label = btn.innerHTML;
     btn.textContent = 'Lendo a foto...';
-    $('menutext-status').textContent = 'A IA está lendo o cardápio. Pode levar uns 20 segundos.';
+    $('menutext-status').textContent = 'A IA está lendo o cardápio. Pode levar até 2 minutos; não feche esta tela.';
     try {
       const r = await global.callNotifyEndpoint({ type: 'menu_ai', image: img });
       if (r.error || !r.days) throw new Error((r.errors && r.errors.join(' | ')) || r.error || 'sem resposta');
@@ -109,6 +109,7 @@
       return true;
     } catch (err) {
       box.textContent = 'Erro: ' + err.message;
+      showToast(err.message, 'error', 7000);
       return false;
     }
   }

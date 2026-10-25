@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v21';
+const CACHE_NAME = 'cardapio-v22';
 
 // ===== Notificacoes do site (Firebase Cloud Messaging) =====
 // Com o site fechado o FCM mostra a notificacao sozinho e, no clique, abre o link
@@ -61,6 +61,7 @@ const CORE_ASSETS = [
   './js/installHelper.js',
   './js/adminNotify.js',
   './js/menuText.js',
+  './js/adminHome.js',
   './js/appUpdate.js',
   './js/app.js'
 ];

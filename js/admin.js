@@ -73,6 +73,7 @@
         }
       }
       if (global.renderMenuTextEditor) global.renderMenuTextEditor();
+      if (global.renderAdminHome) global.renderAdminHome();
 
       if (scheduledDateSpan) {
         if (st.currentMenuData.targetRotationDate) {

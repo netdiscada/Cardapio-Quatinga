@@ -738,3 +738,38 @@ html.dark .mini-icon.ok { background: #11331F; color: #86EFAC; }
 .push-enable.hidden { display: none; }
 .push-card > div { flex-grow: 1; min-width: 0; }
 #publicReportButtonContainer { margin-bottom: 16px; }
+
+/* ===== Painel do ADM no estilo da tela do funcionário ===== */
+.adm-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 4px 16px; }
+.adm-top .home-greeting { margin: 0; }
+#adm-hello { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.6px; color: var(--text); }
+#adm-date { font-size: 14px; font-weight: 600; color: var(--muted); }
+.adm-actions { display: flex; gap: 8px; }
+.btn-ghost.danger { color: #B91C1C; }
+html.dark .btn-ghost.danger { color: #FCA5A5; }
+#adm-hero-kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; opacity: 0.88; }
+#adm-hero-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.2; color: #FFFFFF !important; }
+#adm-hero-text { margin: 0; font-size: 14px; line-height: 1.45; opacity: 0.92; }
+.adm-mini { margin-bottom: 0; }
+
+/* A seção do cardápio deixa de ser uma caixa: resumo e mini cartões ficam soltos */
+#admin-view #menu-management-section { background: transparent !important; border: 0 !important; padding: 0 !important; margin-bottom: 16px !important; }
+#dev-panel-section .adm-mini { margin-bottom: 16px; }
+
+/* Demais abas do ADM: caixas mais enxutas */
+#admin-view section[data-admin-panel] { padding: 16px !important; margin-bottom: 16px !important; }
+#admin-view section[data-admin-panel] > h2:first-child,
+#admin-view section[data-admin-panel] > div:first-child > h2 { font-size: 20px !important; margin-bottom: 12px !important; }
+#admin-view .mb-8 { margin-bottom: 16px !important; }
+#admin-view .mb-6 { margin-bottom: 12px !important; }
+#admin-view .p-6 { padding: 16px !important; }
+#admin-view .text-2xl { font-size: 20px !important; }
+
+/* Janela que recebe o bloco do mini cartão */
+.adm-sheet { max-width: 720px; gap: 12px; }
+.adm-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: -12px; background: var(--surface); padding: 4px 0 8px; z-index: 2; }
+#adm-pop-body > * { border: 0 !important; padding: 0 !important; margin: 0 !important; background: transparent !important; box-shadow: none !important; }
+#adm-pop-body > * > h3:first-child, #adm-pop-body .menutext-head h3 { display: none; }
+#adm-pop-body .menutext-head p { margin: 0 0 4px; }
+#adm-pop-body img#admin-current-image { height: auto !important; max-height: 50vh; object-fit: contain !important; }
+body.pop-open { overflow: hidden; }
