@@ -64,8 +64,34 @@ function safeToMillis(ts) {
     }
     return q;
   }
-  function getDoc(ref) { return ref.get(); }
-  function getDocs(ref) { return ref.get(); }
+  // Leitura rápida: sem internet vai direto ao cache do celular; com internet espera o
+  // servidor no máximo 2,5 s e então usa o cache (sozinho o Firestore esperava ~10 s).
+  // Se o cache não tiver o dado, continua esperando o servidor.
+  const SERVER_WAIT_MS = 2500;
+  function setNetSlow(slow) {
+    if (global.setConnectionSlow) global.setConnectionSlow(slow);
+  }
+  function getFast(ref) {
+    if (!navigator.onLine) return ref.get({ source: 'cache' }).catch(() => ref.get());
+    const server = ref.get();
+    return new Promise((resolve, reject) => {
+      let done = false;
+      server.then((r) => { setNetSlow(false); if (!done) { done = true; resolve(r); } },
+        (e) => { if (!done) { done = true; reject(e); } });
+      setTimeout(() => {
+        if (done) return;
+        ref.get({ source: 'cache' }).then((r) => {
+          // Consulta sem nada no cache volta vazia: nesse caso vale esperar o servidor
+          if (done || (r.docs && r.empty)) return;
+          done = true;
+          setNetSlow(true);
+          resolve(r);
+        }, () => {});
+      }, SERVER_WAIT_MS);
+    });
+  }
+  function getDoc(ref) { return getFast(ref); }
+  function getDocs(ref) { return getFast(ref); }
   function setDoc(ref, data, opts) { return ref.set(data, opts); }
   function updateDoc(ref, data) { return ref.update(data); }
   function deleteDoc(ref) { return ref.delete(); }

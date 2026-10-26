@@ -85,7 +85,12 @@ body {
 }
 .icon-btn:hover { border-color: var(--primary); }
 .icon-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-#offline-banner { top: var(--sat) !important; }
+/* Offline: o subtítulo da marca vira um aviso pequeno em âmbar (sem faixa por cima da tela) */
+#app-topbar .offline-pill { display: none; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #B45309; white-space: nowrap; }
+.dark #app-topbar .offline-pill { color: #FBBF24; }
+#app-topbar .offline-pill svg { width: 13px; height: 13px; flex-shrink: 0; }
+body.is-offline #app-topbar .brand-sub { display: none; }
+body.is-offline #app-topbar .offline-pill { display: inline-flex; }
 
 /* ===== Barras de abas inferiores (funcionário e ADM): pílula flutuante ===== */
 #user-tabs, #admin-tabs {

@@ -246,7 +246,7 @@
     iniciarListenerLancamentos();
     setStatus('fin-status', '', 'info');
     fixosRecorrentes(F.mesAtual, F.anoAtual);
-    contrachequeAuto();
+    contrachequeAuto(true);
   }
 
   // ===== Entradas automáticas do contracheque =====

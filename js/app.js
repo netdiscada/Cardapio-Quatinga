@@ -238,14 +238,13 @@
   // =====================================================================
   // Status online/offline
   // =====================================================================
+  // Indicador discreto no topo (troca o subtítulo "Cardápio Quatinga" por "Offline").
+  // Também liga quando há rede mas o servidor não responde (db.js getFast).
+  let connectionSlow = false;
   function updateOnlineStatus() {
-    const banner = document.getElementById('offline-banner');
-    if (navigator.onLine) {
-      banner.classList.add('hidden');
-    } else {
-      banner.classList.remove('hidden');
-    }
+    document.body.classList.toggle('is-offline', !navigator.onLine || connectionSlow);
   }
+  global.setConnectionSlow = (slow) => { connectionSlow = !!slow; updateOnlineStatus(); };
 
   // =====================================================================
   // CLIQUE NA NOTIFICACAO (APK e site). O Worker manda data.action:
@@ -612,7 +611,7 @@
   document.getElementById('menu-image').addEventListener('load', global.handleImageLoad);
 
   window.addEventListener('online', () => { updateOnlineStatus(); showToast("Conexão restabelecida!", "success"); });
-  window.addEventListener('offline', () => { updateOnlineStatus(); showToast("Você está offline. Alterações serão salvas no celular.", "info", 5000); });
+  window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
   bindImageUploadHandlers();

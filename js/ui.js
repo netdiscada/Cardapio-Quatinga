@@ -227,8 +227,10 @@
     document.body.classList.add('show-user-tabs');
     const rgfInput = document.getElementById('employeeRGF');
     if (!rgfInput.value && localStorage.getItem('employeeRGF')) { rgfInput.value = localStorage.getItem('employeeRGF'); }
-    if (rgfInput.value) { await global.findEmployeeByRGF(rgfInput.value); }
+    // O cardápio começa a carregar junto (antes esperava o nome do funcionário chegar)
     global.loadAndDisplayMenu();
+    // Quando o nome chega, refaz a tela do pedido (o cardápio pode ter chegado antes)
+    if (rgfInput.value && await global.findEmployeeByRGF(rgfInput.value)) await global.validateForm();
     // Inicia checker de notificações para funcionário
     if (global.startNotificationChecker) {
       global.startNotificationChecker(false, rgfInput.value, document.getElementById('employeeName').value);
