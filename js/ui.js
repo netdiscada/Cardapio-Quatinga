@@ -227,6 +227,9 @@
     document.body.classList.add('show-user-tabs');
     const rgfInput = document.getElementById('employeeRGF');
     if (!rgfInput.value && localStorage.getItem('employeeRGF')) { rgfInput.value = localStorage.getItem('employeeRGF'); }
+    // Nome salvo neste aparelho: o pedido já aparece com o cardápio salvo, sem esperar a internet
+    const nameInput = document.getElementById('employeeName');
+    if (rgfInput.value && !nameInput.value) nameInput.value = global.cachedEmployeeName(rgfInput.value);
     // O cardápio começa a carregar junto (antes esperava o nome do funcionário chegar)
     global.loadAndDisplayMenu();
     // Quando o nome chega, refaz a tela do pedido (o cardápio pode ter chegado antes)

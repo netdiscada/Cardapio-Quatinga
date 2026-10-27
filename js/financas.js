@@ -74,7 +74,6 @@
   }
 
   // ===== API Prefeitura (contracheque) =====
-  const PREFEITURA_API = 'https://dadosadm.mogidascruzes.sp.gov.br/api';
 
   // Mescla de recebimento: a folha do mês X é recebida no mês X+1
   function mesRecebimento(mes, ano) {
@@ -95,44 +94,19 @@
       } catch (e) { /* ignora cache quebrado */ }
     }
 
-    const anoAtual = hoje.getFullYear();
-    let results = [];
-    for (let ano = anoAtual; ano >= anoAtual - 1 && results.length === 0; ano--) {
-      try {
-        const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        if (data.results && data.results.length > 0) results = data.results;
-      } catch (e) { /* offline ou erro */ }
-    }
+    // Ano atual ou o anterior (offline ou erro: sem contracheque)
+    const results = await global.Prefeitura.folhasDoRgf(rgf, 1).catch(() => []);
     if (!results.length) return null;
-    const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-    const pool = mensais.length > 0 ? mensais : results;
     // Lista todas as folhas (últimos 12 meses), ordenadas da mais recente
-    const folhas = pool.sort((a, b) => (b.ano * 12 + b.mes) - (a.ano * 12 + a.mes));
-    const latest = folhas[0];
-    let verbas = [];
-    try {
-      const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
-      if (respF.ok) {
-        const fd = await respF.json();
-        if (fd.results) verbas = fd.results;
-      }
-    } catch (e) { /* detalhe opcional */ }
+    const folhas = global.Prefeitura.folhasMensais(results).sort((a, b) => (b.ano * 12 + b.mes) - (a.ano * 12 + a.mes));
     const dados = {
       folhas: [],
       latest: null,
     };
-    // Processa CADA folha com suas verbas (adiantamento vem do detalhe)
-    for (const f of folhas) {
-      let verbasFolha = [];
-      try {
-        const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${f.idfunselec}`);
-        if (respF.ok) {
-          const fd = await respF.json();
-          if (fd.results) verbasFolha = fd.results;
-        }
-      } catch (e) { /* sem detalhe */ }
+    // Verbas de CADA folha (o adiantamento vem do detalhe), todas ao mesmo tempo
+    const verbasPorFolha = await Promise.all(folhas.map(f => global.Prefeitura.detalheFolha(f.idfunselec).catch(() => [])));
+    folhas.forEach((f, i) => {
+      const verbasFolha = verbasPorFolha[i];
       const adiantamentoVerbaF = verbasFolha.find(v => v.desnoverba && v.desnoverba.includes('ADIANTAMENTO'));
       const adiantamentoF = adiantamentoVerbaF ? Math.abs(parseFloat(adiantamentoVerbaF.valorverba)) : 0;
       const liquidoF = parseFloat(f.liquido) || 0;
@@ -143,7 +117,7 @@
         salarioDia5: Math.max(0, liquidoF - adiantamentoF),
         nome: f.nome,
       });
-    }
+    });
     dados.latest = dados.folhas[0];
     // Salva no cache (24h)
     localStorage.setItem(cacheKey, JSON.stringify({ dados, timestamp: Date.now() }));
@@ -765,8 +739,15 @@
     const sec = document.getElementById('user-financas-section');
     if (!sec) return;
     try { Object.keys(localStorage).filter(k => k.startsWith('fin_senha_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* sem storage */ }
-    // Sessão lembrada neste aparelho: a aba já abre no painel, sem pedir RGF e senha
-    finRgfLogado().then(rgf => { if (rgf && !F.autenticado) entrar(rgf); }).catch(() => {});
+    // Sessão lembrada neste aparelho: a aba já abre no painel, sem pedir RGF e senha.
+    // Só confere (e carrega lançamentos e contracheque) quando o funcionário abre a aba:
+    // na abertura do app isso pesava, principalmente com internet lenta.
+    let sessaoConferida = false;
+    document.querySelector('#user-tabs [data-user-tab="financas"]')?.addEventListener('click', () => {
+      if (sessaoConferida) return;
+      sessaoConferida = true;
+      finRgfLogado().then(rgf => { if (rgf && !F.autenticado) entrar(rgf); }).catch(() => {});
+    });
 
     document.getElementById('fin-identificar-form').addEventListener('submit', handleIdentificar);
     document.getElementById('fin-login-form').addEventListener('submit', handleLogin);

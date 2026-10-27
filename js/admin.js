@@ -20,9 +20,19 @@
     if (!auth.currentUser) return;
     if (st.menuUnsubscribe) st.menuUnsubscribe();
 
+    // O primeiro retorno vem do cache do celular (abre na hora); se depois o servidor
+    // trouxer um cardápio diferente, a tela se refaz sozinha e o funcionário é avisado
+    let firstSnapshot = true;
     st.menuUnsubscribe = fb.onSnapshot(global.getMenuDocRef(), async (docSnap) => {
+      const prev = st.currentMenuData;
       const hadNextWeek = !!st.currentMenuData.nextMenuImageBase64;
       st.currentMenuData = (docSnap.exists && docSnap.data()) ? docSnap.data() : { menuImageBase64: '', holidays: [], nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null, menuText: {}, nextMenuText: {} };
+      const menuChanged = ['menuImageBase64', 'nextMenuImageBase64', 'menuText', 'nextMenuText']
+        .some(k => JSON.stringify(prev[k] || '') !== JSON.stringify(st.currentMenuData[k] || ''));
+      if (!firstSnapshot && menuChanged && localStorage.getItem('currentAppView') !== 'admin') {
+        showToast('Cardápio atualizado.', 'success');
+      }
+      firstSnapshot = false;
       const hasNextWeek = !!st.currentMenuData.nextMenuImageBase64;
 
       // Transicao automatica no Painel ADM se houver Proxima Semana
@@ -688,7 +698,6 @@
   }
 
   // ===== v3.2: Consulta RGF no portal da transparencia de Mogi das Cruzes =====
-  const PREFEITURA_API = "https://dadosadm.mogidascruzes.sp.gov.br/api";
 
   function fmtMoney(v) {
     const n = parseFloat(String(v).replace(',', '.'));
@@ -794,38 +803,19 @@
     resultEl.innerHTML = '';
     rgfSetStatus('Consultando RGF ' + rgf + '...', 'loading');
     try {
-      // 1) Busca a folha mais recente: percorre anos do atual para tras
-      //    (a API pagina por ordem cronologica crescente; filtrar por ano
-      //     garante que o registro mais novo nunca fique numa pagina oculta)
-      const anoAtual = new Date().getFullYear();
-      let results = [];
-      for (let ano = anoAtual; ano >= anoAtual - 8 && results.length === 0; ano--) {
-        const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        if (data.results && data.results.length > 0) results = data.results;
-      }
+      // 1) Folhas do ano mais recente com registro (até 8 anos para trás)
+      const results = await global.Prefeitura.folhasDoRgf(rgf, 8);
       if (results.length === 0) {
         rgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
         return;
       }
       // 2) Mais recente: prioriza 'Folha de Pagamento Mensal', senao o mais novo
-      const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-      const pool = mensais.length > 0 ? mensais : results;
-      const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+      const latest = global.Prefeitura.folhaMaisRecente(results);
       rgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
       // 3) Contracheque detalhado do mes mais recente
-      let folhas = [];
-      try {
-        const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
-        if (respF.ok) {
-          const fd = await respF.json();
-          if (fd.results && fd.results.length > 0) {
-            folhas = [{ results: fd.results, mes: latest.mes, ano: latest.ano }];
-          }
-        }
-      } catch (_) { /* contracheque opcional */ }
+      const verbas = await global.Prefeitura.detalheFolha(latest.idfunselec).catch(() => []);
+      const folhas = verbas.length > 0 ? [{ results: verbas, mes: latest.mes, ano: latest.ano }] : [];
 
       rgfRenderResult(latest, folhas);
     } catch (err) {

@@ -63,6 +63,16 @@
       const rgf = checkerState.employeeRGF;
       if (!rgf) return;
 
+      // Controle de tempo primeiro: confere no máximo a cada 15 min (antes buscava os
+      // pedidos e o cardápio, com a foto, a cada 30 s, mesmo de quem já tinha pedido)
+      const now = Date.now();
+      if (now - (checkerState.lastCheckTime || 0) < 15 * 60 * 1000) return;
+
+      // Tem cardápio da semana atual? (já está na memória, vindo do listener do cardápio)
+      const menu = (global.__state && global.__state.currentMenuData) || {};
+      if (!menu.menuImageBase64) return;
+      checkerState.lastCheckTime = now;
+
       // Verifica se já fez pedido da semana atual (não nextWeek)
       const q = fb.query(
         fb.collection(global.db, 'pedidosDaSemana'),
@@ -74,22 +84,12 @@
       // Se já fez pedido, não lembra
       if (!snap.empty) return;
 
-      // Verifica se tem cardápio da semana atual disponível
-      const menuSnap = await fb.getDoc(global.getMenuDocRef());
-      if (!menuSnap.exists || !menuSnap.data().menuImageBase64) return;
-
-      // Controle de tempo: só lembra a cada 15 min (900000 ms)
-      const now = Date.now();
-      const lastReminder = checkerState.lastReminderTime || 0;
-      if (now - lastReminder < 15 * 60 * 1000) return;
-
       // Mostra lembrete
       showLocalNotification(
         '⏰ Lembrete: Faça seu pedido!',
         'O cardápio desta semana está disponível. Não esqueça de escolher seus pratos!',
         { type: 'reminder', tag: 'reminder-' + Date.now() }
       );
-      checkerState.lastReminderTime = now;
     } catch (e) { console.warn('checkEmployeeReminder error:', e); }
   }
 

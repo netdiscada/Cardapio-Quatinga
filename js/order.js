@@ -11,25 +11,38 @@
   const esc = global.escapeHtml;
   const S = function () { return global.__state; };
 
+  // Nome salvo neste aparelho por RGF: a tela do pedido abre com ele sem esperar a internet
+  const NAME_KEY = 'employeeName:';
+  function cachedEmployeeName(rgf) {
+    try { return (rgf && localStorage.getItem(NAME_KEY + rgf)) || ''; } catch (e) { return ''; }
+  }
+
   // ===== Busca funcionario por RGF (com autofill do nome) =====
   async function findEmployeeByRGF(rgf) {
     const nameInput = document.getElementById('employeeName');
     if (!rgf || !auth.currentUser) { nameInput.value = ''; nameInput.placeholder = 'Preenchido automaticamente'; return false; }
+    const show = (docSnap) => {
+      try {
+        if (docSnap.exists) localStorage.setItem(NAME_KEY + rgf, docSnap.data().nome || '');
+        else localStorage.removeItem(NAME_KEY + rgf);
+      } catch (e) { /* sem storage */ }
+      nameInput.value = docSnap.exists ? docSnap.data().nome : '';
+      nameInput.placeholder = docSnap.exists ? 'Preenchido automaticamente' : 'RGF não encontrado';
+      return docSnap.exists;
+    };
     try {
-      const docSnap = await fb.getDoc(fb.doc(global.db, "funcionarios", rgf));
-      if (docSnap.exists) {
-        nameInput.value = docSnap.data().nome;
-        nameInput.placeholder = 'Preenchido automaticamente';
-        return true;
-      } else {
-        nameInput.value = '';
-        nameInput.placeholder = 'RGF não encontrado';
-        return false;
-      }
+      // O servidor trouxe outro resultado (nome mudou ou RGF saiu): corrige e refaz a tela do pedido
+      const docSnap = await fb.getCacheFirst(fb.doc(global.db, "funcionarios", rgf), (fresh) => {
+        if (document.getElementById('employeeRGF').value.trim() !== rgf) return;
+        show(fresh);
+        global.validateForm();
+      });
+      return show(docSnap);
     } catch (error) {
-      nameInput.value = '';
-      nameInput.placeholder = 'Erro';
-      return false;
+      // Sem internet e sem cache do banco: fica com o nome salvo neste aparelho
+      nameInput.value = cachedEmployeeName(rgf);
+      nameInput.placeholder = nameInput.value ? 'Preenchido automaticamente' : 'Erro';
+      return !!nameInput.value;
     }
   }
 
@@ -60,11 +73,20 @@
 
   // ===== Verifica se ja existe pedido do funcionario =====
   async function checkExistingOrder(rgf) {
-    const st = S();
     if (!rgf || !auth.currentUser) return;
     try {
       const q = fb.query(fb.collection(global.db, "pedidosDaSemana"), fb.where("employeeRGF", "==", rgf));
-      const snapshot = await fb.getDocs(q);
+      // Abre com os pedidos salvos no celular; se o servidor trouxer outro resultado, refaz a tela
+      const snapshot = await fb.getCacheFirst(q, (fresh) => {
+        if (document.getElementById('employeeRGF').value.trim() === rgf) showOrderState(fresh, rgf);
+      });
+      showOrderState(snapshot, rgf);
+    } catch (error) { console.error(error); }
+  }
+
+  function showOrderState(snapshot, rgf) {
+    const st = S();
+    try {
       const wizardContainer = document.getElementById('order-wizard-container');
       const existingContainer = document.getElementById('existing-order-container');
       const publicReportBtnContainer = document.getElementById('publicReportButtonContainer');
@@ -176,7 +198,7 @@
     if (isValidUser && !st.autoSwitchDone && st.currentMenuData.nextMenuImageBase64) {
       try {
         const q = fb.query(fb.collection(global.db, "pedidosDaSemana"), fb.where("employeeRGF", "==", rgf));
-        const snap = await fb.getDocs(q);
+        const snap = await fb.getCacheFirst(q);
         let hasNextOrder = false;
         snap.forEach(doc => { if (doc.data().isNextWeek === true) hasNextOrder = true; });
         if (!hasNextOrder) {
@@ -269,6 +291,7 @@
   }
 
   global.findEmployeeByRGF = findEmployeeByRGF;
+  global.cachedEmployeeName = cachedEmployeeName;
   global.displayExistingOrder = displayExistingOrder;
   global.checkExistingOrder = checkExistingOrder;
   global.handleWizardSelection = handleWizardSelection;

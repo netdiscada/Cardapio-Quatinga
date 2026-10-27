@@ -92,6 +92,29 @@ function safeToMillis(ts) {
   }
   function getDoc(ref) { return getFast(ref); }
   function getDocs(ref) { return getFast(ref); }
+
+  // Cache primeiro (abertura do app): com o dado já salvo no celular a tela abre na hora,
+  // sem esperar a internet. O servidor é consultado por trás e, se a resposta vier
+  // diferente, onFresh(snapshot) refaz a tela. Sem nada salvo (ou consulta vazia no
+  // cache, que pode ser só falta de dado) cai no getFast, que espera o servidor.
+  // Servidor sem responder em 4 s liga o aviso "Offline · usando dados salvos": com sinal
+  // ruim os dados continuam ligados e o navegador não percebe que está sem internet.
+  const SLOW_MS = 4000;
+  function snapKey(s) {
+    return JSON.stringify(s.docs ? s.docs.map(d => [d.id, d.data()]) : [s.exists, s.exists ? s.data() : null]);
+  }
+  function getCacheFirst(ref, onFresh) {
+    return ref.get({ source: 'cache' }).then((cached) => {
+      if (cached.docs ? cached.empty : !cached.exists) return getFast(ref);
+      const slow = setTimeout(() => setNetSlow(true), SLOW_MS);
+      ref.get({ source: 'server' }).then((fresh) => {
+        clearTimeout(slow);
+        setNetSlow(false);
+        if (onFresh && snapKey(fresh) !== snapKey(cached)) onFresh(fresh);
+      }, () => { clearTimeout(slow); setNetSlow(true); });
+      return cached;
+    }, () => getFast(ref));
+  }
   function setDoc(ref, data, opts) { return ref.set(data, opts); }
   function updateDoc(ref, data) { return ref.update(data); }
   function deleteDoc(ref) { return ref.delete(); }
@@ -104,6 +127,7 @@ function safeToMillis(ts) {
     doc: doc,
     addDoc: addDoc,
     onSnapshot: onSnapshot,
+    getCacheFirst: getCacheFirst,
     serverTimestamp: serverTimestamp,
     where: where,
     orderBy: orderBy,

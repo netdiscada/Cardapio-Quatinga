@@ -51,7 +51,6 @@
   ];
 
   const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const PREFEITURA_API = "https://dadosadm.mogidascruzes.sp.gov.br/api";
 
   // ===== Render: Feriados =====
   function renderUserHolidays() {
@@ -325,10 +324,9 @@
   // ===== Busca 13º salário (folha de 13º) =====
   async function fetchDecimoTerceiro(rgf, ano) {
     try {
-      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      if (!data.results) return null;
+      const results = await global.Prefeitura.folhasDoAno(rgf, ano);
+      if (!results) return null;
+      const data = { results };
       console.log('[13º] Folhas encontradas:', data.results.map(r => ({ tipo: r.tipo_folha, mes: r.mes, ano: r.ano, id: r.idfunselec })));
       
       // Procura folha de 13º (busca mais ampla)
@@ -364,13 +362,10 @@
 
   async function fetchDecimoTerceiroDetalhe(folha) {
     try {
-      const respDet = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${folha.idfunselec}`);
-      if (respDet.ok) {
-        const det = await respDet.json();
-        if (det.results && det.results.length > 0) {
-          const liquido = det.results.reduce((acc, v) => acc + (v.tipoVerba === 'Rendimentos' ? parseFloat(v.valorverba) : -parseFloat(v.valorverba)), 0);
-          return { competencia: `${MES_ABREV[(folha.mes || 1) - 1]}/${folha.ano}`, liquido, verbas: det.results };
-        }
+      const verbas = await global.Prefeitura.detalheFolha(folha.idfunselec);
+      if (verbas.length > 0) {
+        const liquido = verbas.reduce((acc, v) => acc + (v.tipoVerba === 'Rendimentos' ? parseFloat(v.valorverba) : -parseFloat(v.valorverba)), 0);
+        return { competencia: `${MES_ABREV[(folha.mes || 1) - 1]}/${folha.ano}`, liquido, verbas };
       }
       return { competencia: `${MES_ABREV[(folha.mes || 1) - 1]}/${folha.ano}`, liquido: parseFloat(folha.liquido), verbas: [] };
     } catch (e) {
@@ -506,21 +501,8 @@
 
   // ===== Consulta genérica por campo da API (cargo, secretaria, situacao) =====
   async function consultarPorCampo(campo, termo) {
-    const resultEl = document.getElementById('user-rgf-consult-result');
-    const anoAtual = new Date().getFullYear();
-    let todosResultados = [];
-    let pagina = 1;
-    const maxPaginas = 10; // até 10 páginas (500 registros) para campos com muitos resultados
-
-    while (pagina <= maxPaginas) {
-      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?${campo}=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
-      if (!resp.ok) break;
-      const data = await resp.json();
-      if (!data.results || data.results.length === 0) break;
-      todosResultados = todosResultados.concat(data.results);
-      if (!data.next) break;
-      pagina++;
-    }
+    // até 10 páginas (500 registros) para campos com muitos resultados
+    const todosResultados = await global.Prefeitura.buscarPorCampo(campo, termo, 10);
 
     if (todosResultados.length === 0) {
       userRgfSetStatus('Nenhum registro encontrado para ' + campo + ' "' + termo + '".', 'error');
@@ -544,32 +526,17 @@
 
   // ===== Consulta por RGF (único resultado, certeza absoluta) =====
   async function consultarPorRGF(rgf) {
-    const resultEl = document.getElementById('user-rgf-consult-result');
-    const anoAtual = new Date().getFullYear();
-    let results = [];
-    for (let ano = anoAtual; ano >= anoAtual - 8 && results.length === 0; ano--) {
-      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      if (data.results && data.results.length > 0) results = data.results;
-    }
+    const results = await global.Prefeitura.folhasDoRgf(rgf, 8);
     if (results.length === 0) {
       userRgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
       return;
     }
-    const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-    const pool = mensais.length > 0 ? mensais : results;
-    const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+    const latest = global.Prefeitura.folhaMaisRecente(results);
     userRgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
-    let verbas = null;
-    try {
-      const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
-      if (respF.ok) {
-        const fd = await respF.json();
-        if (fd.results && fd.results.length > 0) verbas = fd.results;
-      }
-    } catch (_) { /* detalhe opcional */ }
+    // Detalhe opcional: sem ele o resumo aparece mesmo assim
+    const detalhe = await global.Prefeitura.detalheFolha(latest.idfunselec).catch(() => []);
+    const verbas = detalhe.length > 0 ? detalhe : null;
 
     userRgfRender(latest, verbas);
 
@@ -582,22 +549,8 @@
 
   // ===== Consulta por Nome (múltiplos resultados em tabela) =====
   async function consultarPorNome(termo) {
-    const resultEl = document.getElementById('user-rgf-consult-result');
-    const anoAtual = new Date().getFullYear();
-    let todosResultados = [];
-    let pagina = 1;
-    const maxPaginas = 10; // até 10 páginas (500 registros)
-
-    // Percorre páginas até encontrar resultados ou esgotar
-    while (pagina <= maxPaginas) {
-      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?nome=${encodeURIComponent(termo)}&ano=${anoAtual}&page=${pagina}`);
-      if (!resp.ok) break;
-      const data = await resp.json();
-      if (!data.results || data.results.length === 0) break;
-      todosResultados = todosResultados.concat(data.results);
-      if (!data.next) break;
-      pagina++;
-    }
+    // até 10 páginas (500 registros)
+    const todosResultados = await global.Prefeitura.buscarPorCampo('nome', termo, 10);
 
     if (todosResultados.length === 0) {
       userRgfSetStatus('Nenhum funcionário encontrado com o nome "' + termo + '".', 'error');
