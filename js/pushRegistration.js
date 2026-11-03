@@ -157,6 +157,7 @@
   function init() {
     bindRgfReassociation();
     if (!auth) return;
+    if (global.__TEST_MODE) return; // modo teste: sem push de verdade
     let started = false;
     auth.onAuthStateChanged((user) => {
       if (!user) return;

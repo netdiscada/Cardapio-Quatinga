@@ -420,26 +420,111 @@
       if (!orders.length) { showToast('Ainda não há pedidos nesta semana.', 'info'); return; }
       const holidays = st.viewingNextWeek ? (st.currentMenuData.nextHolidays || []) : (st.currentMenuData.holidays || []);
       const blob = buildReportDoc(orders, holidays).output('blob');
-      const native = global.Capacitor?.isNativePlatform?.();
-      const { Filesystem, AppTheme } = global.Capacitor?.Plugins || {};
-      if (native && Filesystem && AppTheme && AppTheme.openPdf) {
-        await Filesystem.writeFile({ path: 'Cardapio-Quatinga.pdf', data: await blobToBase64(blob), directory: 'CACHE' });
-        try { await AppTheme.openPdf({ path: 'Cardapio-Quatinga.pdf' }); return; }
-        catch (e) { console.warn('[PDF] leitor indisponível, usando compartilhar:', e && e.message); }
-        await downloadAndShareViaCapacitor(blob, 'Cardápio Quatinga.pdf');
-        return;
-      }
-      if (native) { await downloadAndShareViaCapacitor(blob, 'Cardápio Quatinga.pdf'); return; }
-      const url = URL.createObjectURL(blob);
-      const win = window.open(url, '_blank');
-      if (!win) downloadAndOpenPdf(blob, 'Cardápio Quatinga.pdf');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      // O PDF aparece dentro do app (como no FR); Abrir/Compartilhar/Baixar ficam nos botões de baixo
+      openPdfVisor(blob, 'Cardápio Quatinga.pdf', st.viewingNextWeek ? 'Pedidos da próxima semana' : 'Pedidos da semana');
     } catch (err) {
       console.error('[PDF] falhou:', err);
       showToast('Não foi possível gerar o PDF.', 'error');
     } finally {
       btn.disabled = false;
       btn.innerHTML = label;
+    }
+  }
+
+  // ===== Visor de PDF dentro do app: mostra as páginas na tela (pdf.js local) =====
+  let pdfjsLib = null;
+  async function loadPdfjs() {
+    if (!pdfjsLib) {
+      pdfjsLib = await import(new URL('vendor/pdfjs/pdf.min.js', document.baseURI).href);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdfjs/pdf.worker.min.js', document.baseURI).href;
+    }
+    return pdfjsLib;
+  }
+
+  let pdfVisorDoc = null;
+  function closePdfVisor() {
+    const visor = document.getElementById('pdf-visor');
+    if (!visor) return;
+    visor.classList.add('hidden');
+    document.body.classList.remove('pdf-open');
+    document.getElementById('pdf-visor-pages').innerHTML = '';
+    if (pdfVisorDoc) { try { pdfVisorDoc.destroy(); } catch (e) { /* já destruído */ } pdfVisorDoc = null; }
+  }
+
+  async function openPdfVisor(blob, fileName, title) {
+    const visor = document.getElementById('pdf-visor');
+    if (!visor) { downloadAndOpenPdf(blob, fileName); return; }
+    const pages = document.getElementById('pdf-visor-pages');
+    const actions = document.getElementById('pdf-visor-actions');
+    const native = !!global.Capacitor?.isNativePlatform?.();
+    const { Filesystem, AppTheme } = global.Capacitor?.Plugins || {};
+    document.getElementById('pdf-visor-title').textContent = title || 'PDF';
+    pages.innerHTML = '<div class="pdfv-wait"><div class="pdfv-spin"></div>Abrindo o PDF…</div>';
+    visor.classList.remove('hidden');
+    document.body.classList.add('pdf-open');
+    if (!visor.dataset.bound) {
+      visor.dataset.bound = '1';
+      document.getElementById('pdf-visor-close').addEventListener('click', closePdfVisor);
+    }
+
+    // Botões de baixo: no app "Abrir" (leitor do celular) e "Compartilhar"; no site "Baixar PDF"
+    const buttons = [];
+    if (native) {
+      buttons.push({ label: 'Abrir no leitor', primary: true, run: async () => {
+        if (Filesystem && AppTheme && AppTheme.openPdf) {
+          await Filesystem.writeFile({ path: 'Cardapio-Quatinga.pdf', data: await blobToBase64(blob), directory: 'CACHE' });
+          try { await AppTheme.openPdf({ path: 'Cardapio-Quatinga.pdf' }); return; }
+          catch (e) { console.warn('[PDF] leitor indisponível, usando compartilhar:', e && e.message); }
+        }
+        await downloadAndShareViaCapacitor(blob, fileName);
+      } });
+      buttons.push({ label: 'Compartilhar', run: () => downloadAndShareViaCapacitor(blob, fileName) });
+    } else {
+      buttons.push({ label: 'Baixar PDF', primary: true, run: async () => downloadAndOpenPdf(blob, fileName) });
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        buttons.push({ label: 'Compartilhar', run: async () => {
+          try { await navigator.share({ files: [file], title: 'Cardápio Quatinga' }); }
+          catch (e) { if (e.name !== 'AbortError') showToast('Não foi possível compartilhar.', 'error'); }
+        } });
+      }
+    }
+    actions.innerHTML = '';
+    buttons.forEach(b => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = b.primary ? 'btn-primary' : 'btn-secondary';
+      el.textContent = b.label;
+      el.addEventListener('click', async () => {
+        el.disabled = true;
+        try { await b.run(); } catch (e) { console.error('[PDF] ação falhou:', e); showToast('Não foi possível concluir.', 'error'); }
+        finally { el.disabled = false; }
+      });
+      actions.appendChild(el);
+    });
+
+    try {
+      const lib = await loadPdfjs();
+      if (pdfVisorDoc) { try { pdfVisorDoc.destroy(); } catch (e) { /* ok */ } }
+      const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+      pdfVisorDoc = doc;
+      pages.innerHTML = '';
+      const cssWidth = Math.min(900, Math.max(280, pages.clientWidth - 24));
+      const out = Math.min(global.devicePixelRatio || 1, 2.5);
+      for (let n = 1; n <= doc.numPages; n++) {
+        const page = await doc.getPage(n);
+        if (pdfVisorDoc !== doc) return; // fechou ou abriu outro enquanto desenhava
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: (cssWidth / base.width) * out });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        pages.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      }
+    } catch (err) {
+      console.error('[PDF] visor falhou:', err);
+      pages.innerHTML = '<div class="pdfv-wait">Não consegui mostrar o PDF aqui.<br>Use o botão abaixo para abrir.</div>';
     }
   }
 

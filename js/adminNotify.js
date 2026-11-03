@@ -51,9 +51,18 @@
            <ul class="mt-1 list-disc pl-5">${s.semAviso.map(f => `<li>${esc(f.nome || 'Sem nome')} <span class="text-gray-400">(RGF ${esc(f.rgf)})</span></li>`).join('')}</ul>
            <p class="mt-2 text-xs text-gray-500">Peça para abrirem o app ou o site, digitarem o RGF e tocarem em "Ativar notificações".</p>`
         : '<p class="mt-3 font-semibold text-green-600 dark:text-green-400">Todos os funcionários recebem notificações. ✅</p>';
+      // Quem está recebendo (o Worker antigo ainda não manda a lista: aí some só este trecho)
+      const recebem = (s.listaComAviso || []).length
+        ? `<p class="mt-3 font-semibold text-green-600 dark:text-green-400">Recebendo avisos (${s.listaComAviso.length}):</p>
+           <ul class="mt-1 list-disc pl-5">${s.listaComAviso.map(f => {
+             const onde = [f.app ? 'app' : '', f.site ? 'site' : ''].filter(Boolean).join(' + ');
+             return `<li>${esc(f.nome || 'Sem nome')} <span class="text-gray-400">(RGF ${esc(f.rgf)}${onde ? ' · ' + onde : ''})</span></li>`;
+           }).join('')}</ul>`
+        : '';
       box.innerHTML = `
         <p><b>${s.comAviso}</b> de <b>${s.funcionarios}</b> funcionários recebem notificações.</p>
         <p class="mt-1 text-xs text-gray-500">Aparelhos: ${s.aparelhos.app} no app · ${s.aparelhos.site} no site · ${s.aparelhos.adm} do ADM${s.aparelhos.semRgf ? ` · ${s.aparelhos.semRgf} sem RGF` : ''}</p>
+        ${recebem}
         ${faltam}`;
     } catch (err) {
       box.textContent = 'Erro ao carregar: ' + err.message;

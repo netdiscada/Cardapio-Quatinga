@@ -14,9 +14,16 @@
     // No build compat o Firestore ja vem com persistencia offline multi-abas habilitada
     // por padrao (equivalente ao persistentLocalCache + persistentMultipleTabManager do v1.x).
     db = global.firebase.firestore(app);
-    // Habilita persistência offline do Firestore (cache no celular)
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    if (global.__TEST_MODE) {
+      // Modo teste: banco e login FALSOS no PC (emuladores). Sem cache offline, para cada
+      // abertura mostrar exatamente o que está no emulador.
+      db.useEmulator('localhost', 8080);
+    } else {
+      // Habilita persistência offline do Firestore (cache no celular)
+      db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    }
     auth = global.firebase.auth(app);
+    if (global.__TEST_MODE) auth.useEmulator('http://localhost:9099', { disableWarnings: true });
     trustSavedLogin(auth);
   } catch (error) {
     console.error("Erro ao inicializar Firebase: ", error);

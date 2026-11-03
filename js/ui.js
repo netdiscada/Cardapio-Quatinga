@@ -62,12 +62,6 @@
   // ===== Wizard do funcionario =====
   // ===== Pedido: chips dos dias + opções do dia =====
   const SHORT_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
-  const OPTION_ICONS = [
-    '<path d="M4 15a8 8 0 0 1 16 0z"></path><path d="M2.5 18.5h19M12 7V5.5"></path>',
-    '<path d="M3 11h18a9 9 0 0 1-18 0z"></path><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"></path>',
-    '<circle cx="10" cy="12" r="7"></circle><circle cx="10" cy="12" r="2.8"></circle><path d="M16.5 15.5L21 20"></path>',
-    '<path d="M14.5 3.5a6 6 0 0 1 6 6c0 4-4 6-7 6l-2.5 2.5"></path><path d="M11 18l-3 3M8.5 15.5l-3 .5-1.5 1.5 2.5 2.5 1.5-1.5.5-3"></path>'
-  ];
   const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
 
   // Segunda-feira da semana que o funcionário está vendo (atual ou próxima)
@@ -84,15 +78,6 @@
   }
 
   function pad2(n) { return String(n).padStart(2, '0'); }
-
-  // Nome do prato do dia, quando o ADM digitou o cardápio (menuText); senão a descrição padrão
-  function getDishText(dayId, optIndex) {
-    const mt = (S().weeklyMenu.menuText || {})[dayId];
-    if (!mt || typeof mt !== 'object') return '';
-    if (optIndex === 0) return mt.principal || '';
-    if (optIndex === 1) return mt.opcao || '';
-    return '';
-  }
 
   function isDayDone(st, i) { return !!(st.userChoices[i] && st.userChoices[i].choice); }
 
@@ -125,6 +110,15 @@
       const pending = findPendingDay(st, weekDays.length - 1);
       index = pending === -1 ? 0 : pending;
     }
+    // Feriado não é escolhido: o pedido pula sozinho para o próximo dia com almoço
+    // (o feriado só fica marcado na fileira de dias, em cima)
+    const holidayAt = (i) => st.userActiveHolidays.includes(getDayId(weekDays[i]));
+    if (holidayAt(index)) {
+      const pending = findPendingDay(st, index);
+      const firstWorkday = weekDays.findIndex((_, i) => !holidayAt(i));
+      if (pending !== -1 && !holidayAt(pending)) index = pending;
+      else if (firstWorkday !== -1) index = firstWorkday;
+    }
     st.currentDayIndex = index;
     wizardContainer.classList.remove('hidden');
 
@@ -140,7 +134,8 @@
       const cls = ['day-chip', i === index ? 'active' : '', holiday ? 'holiday' : '', done ? 'done' : ''].join(' ');
       const mark = holiday ? '<span class="chip-mark">feriado</span>' : (done ? `<span class="chip-mark">${CHECK_ICON}</span>` : '<span class="chip-mark"></span>');
       const label = `${d}, ${pad2(dates[i].getDate())}/${pad2(dates[i].getMonth() + 1)}${holiday ? ', feriado' : (done ? ', escolhido' : '')}`;
-      return `<button type="button" role="tab" class="${cls}" data-day-index="${i}" aria-selected="${i === index}" aria-label="${label}"><span class="chip-day">${SHORT_DAYS[i]}</span><span class="chip-date">${pad2(dates[i].getDate())}</span>${mark}</button>`;
+      // Feriado é só informativo: o botão do dia fica desativado (não leva a lugar nenhum)
+      return `<button type="button" role="tab" class="${cls}" data-day-index="${i}" aria-selected="${i === index}" aria-label="${label}"${holiday && !isHoliday ? ' disabled' : ''}><span class="chip-day">${SHORT_DAYS[i]}</span><span class="chip-date">${pad2(dates[i].getDate())}</span>${mark}</button>`;
     }).join('');
 
     document.getElementById('wizard-day-title').textContent = `${day.replace('-feira', '')} · ${pad2(dates[index].getDate())}/${pad2(dates[index].getMonth() + 1)}`;
@@ -149,19 +144,21 @@
     document.getElementById('wizard-notes-label').classList.toggle('hidden', isHoliday);
     const holidayInfo = isHoliday && global.isHolidayDate ? global.isHolidayDate(dates[index]) : null;
     document.getElementById('wizard-holiday-name').textContent = holidayInfo && holidayInfo.isHoliday ? holidayInfo.evento : 'Feriado';
-    const dayText = (st.weeklyMenu.menuText || {})[dayId];
-    const garnish = !isHoliday && dayText && typeof dayText === 'object' ? (dayText.guarnicao || '') : '';
-    document.getElementById('wizard-garnish').textContent = garnish ? 'Guarnição: ' + garnish : '';
-    document.getElementById('wizard-garnish').classList.toggle('hidden', !garnish);
+    // Na tela de pedido só os nomes de sempre (Prato Principal, Opção, Omelete, Filé de frango):
+    // é o que os funcionários estão acostumados a tocar. Os pratos digitados (menuText) aparecem
+    // só depois, no "Hoje" do Início e no pedido feito, nunca aqui.
+    document.getElementById('wizard-garnish').textContent = '';
+    document.getElementById('wizard-garnish').classList.add('hidden');
 
     const optionsContainer = document.getElementById('wizard-options');
     optionsContainer.classList.toggle('hidden', isHoliday);
     optionsContainer.innerHTML = isHoliday ? '' : mealOptions.map((opt, i) => {
       const on = current && current.choice === opt.name;
-      const dish = getDishText(dayId, i);
-      return `<button type="button" data-value="${esc(opt.name)}" aria-pressed="${!!on}" class="wizard-btn option-card${on ? ' selected' : ''}">
-        <span class="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${OPTION_ICONS[i] || OPTION_ICONS[0]}</svg></span>
-        <span class="option-text"><span class="option-name">${esc(opt.name)}</span><span class="option-desc${dish ? ' dish' : ''}">${esc(dish || opt.description)}</span></span>
+      // Cada opção tem sempre a mesma cor e o mesmo emoji (data-opt = posição em mealOptions):
+      // o funcionário aprende pela cor, e o selecionado ainda ganha a marca de "✓"
+      return `<button type="button" data-value="${esc(opt.name)}" data-opt="${i}" aria-pressed="${!!on}" class="wizard-btn option-card${on ? ' selected' : ''}">
+        <span class="option-emoji" aria-hidden="true">${esc(opt.emoji || '🍽️')}</span>
+        <span class="option-text"><span class="option-name">${esc(opt.name)}</span></span>
         ${on ? `<span class="option-check">${CHECK_ICON}</span>` : ''}
       </button>`;
     }).join('');

@@ -294,7 +294,8 @@
 
     nav.addEventListener('click', (e) => {
       const btn = e.target.closest('.admin-tab-btn');
-      if (!btn) return;
+      // O botão ADM da barra não é uma aba (não tem data-user-tab): só abre o painel do ADM
+      if (!btn || !btn.dataset.userTab) return;
       showUserPanel(btn.dataset.userTab);
     });
 

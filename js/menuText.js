@@ -212,6 +212,13 @@
       renderEditor();
     });
     $('menutext-ai').addEventListener('click', fillWithAi);
+    // Botão na aba de inserir a imagem: lê a foto da próxima semana e abre a revisão do texto
+    $('uploadAiBtn')?.addEventListener('click', () => {
+      target = 'next';
+      if (global.openAdmPop) global.openAdmPop('menutext-card', 'Cardápio digitado');
+      else renderEditor();
+      fillWithAi();
+    });
     $('menutext-save').addEventListener('click', saveText);
     $('menutext-clear').addEventListener('click', () => {
       document.querySelectorAll('#menutext-grid input').forEach(i => { i.value = ''; });

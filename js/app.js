@@ -437,11 +437,25 @@
     const btnViewPublicReport = document.getElementById('btn-view-public-report');
     if (btnViewPublicReport) btnViewPublicReport.addEventListener('click', openPublicReportModal);
     document.querySelectorAll('.cancel-modal-btn, #custom-confirm-cancel-btn').forEach(btn => { btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')); });
-    const switchToAdmin = document.getElementById('switchToAdmin');
-    if (switchToAdmin) switchToAdmin.addEventListener('click', () => {
-      if (auth?.currentUser && auth.currentUser.uid === APP_CONFIG.ADMIN_UID) { localStorage.setItem('currentAppView', 'admin'); showAdminView(); }
-      else { document.getElementById('admin-login-modal').classList.remove('hidden'); }
-    });
+    // Interruptor ADM do topo: desligado abre o painel (pede o login se precisar);
+    // ligado volta para a visão do funcionário
+    const adminToggle = document.getElementById('switchToAdmin');
+    if (adminToggle) {
+      const adminView = document.getElementById('admin-view');
+      const syncAdminToggle = () => {
+        const on = !adminView.classList.contains('hidden');
+        adminToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+        adminToggle.setAttribute('aria-label', on ? 'Voltar para a tela do funcionário' : 'Entrar no painel do ADM');
+      };
+      adminToggle.addEventListener('click', () => {
+        if (!adminView.classList.contains('hidden')) { localStorage.setItem('currentAppView', 'user'); showUserView(); }
+        else if (auth?.currentUser && auth.currentUser.uid === APP_CONFIG.ADMIN_UID) { localStorage.setItem('currentAppView', 'admin'); showAdminView(); }
+        else { document.getElementById('admin-login-modal').classList.remove('hidden'); }
+      });
+      // Acompanha qualquer troca de visão (login, sair, "Ver como funcionário")
+      new MutationObserver(syncAdminToggle).observe(adminView, { attributes: true, attributeFilter: ['class'] });
+      syncAdminToggle();
+    }
 
     const adminLoginForm = document.getElementById('admin-login-form');
     if (adminLoginForm) adminLoginForm.addEventListener('submit', handleAdminLogin);

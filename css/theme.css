@@ -1099,3 +1099,102 @@ html.dark .today-card.holiday .today-kicker { color: #FDBA74; }
 #menu-viewer-modal .viewer-zoom .hidden { display: none; }
 html.dark #menu-viewer-modal #viewer-close-btn.viewer-back, html.dark .viewer-zoom { box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
 #menu-viewer-buttons:not(:has(*)) { display: none; }
+
+/* ===== Visor de PDF dentro do app (igual ao do FR): páginas na tela, botões embaixo ===== */
+#pdf-visor { position: fixed; inset: 0; z-index: 1600; display: flex; flex-direction: column; background: var(--bg); }
+#pdf-visor.hidden { display: none; }
+.pdfv-top { display: flex; align-items: center; gap: 10px; padding: calc(var(--sat) + 10px) 12px 10px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.pdfv-top strong { flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdfv-pages { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; -webkit-overflow-scrolling: touch; }
+.pdfv-pages canvas { width: 100%; max-width: 900px; height: auto; flex: none; background: #fff; border-radius: 8px; box-shadow: 0 2px 14px rgba(15, 23, 42, 0.2); }
+.pdfv-wait { margin: auto; text-align: center; color: var(--muted); font-weight: 600; }
+.pdfv-wait .pdfv-spin { width: 34px; height: 34px; margin: 0 auto 12px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--primary); animation: pdfv-gira 0.8s linear infinite; }
+@keyframes pdfv-gira { to { transform: rotate(360deg); } }
+.pdfv-actions { display: flex; gap: 8px; padding: 10px 12px calc(10px + var(--sab)); background: var(--surface); border-top: 1px solid var(--border); }
+.pdfv-actions button { flex: 1; min-height: 46px; }
+body.pdf-open { overflow: hidden; }
+
+/* ===== Botões do topo: instalar e notificações (site) ===== */
+.icon-btn.hidden { display: none; }
+#notifyBtn.is-on { color: #15803D; border-color: #86EFAC; }
+html.dark #notifyBtn.is-on { color: #86EFAC; border-color: #166534; }
+#notifyBtn.is-off { color: #B45309; }
+html.dark #notifyBtn.is-off { color: #FBBF24; }
+#app-topbar .brand > div { overflow: hidden; }
+#app-topbar .brand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 480px) {
+  #app-topbar .top-actions { gap: 6px; }
+}
+
+/* ===== Tela de pedido (reclamações de funcionários) ===== */
+/* Foto: o palco começa abaixo da barra flutuante (voltar/título/zoom) e a imagem fica
+   centrada no espaço livre, sem subir para debaixo dos botões */
+#menu-viewer-stage { padding-top: calc(var(--sat) + 62px); padding-bottom: 6px; box-sizing: border-box; }
+/* Instrução do dia visível e cartões maiores para tocar */
+#order-wizard #wizard-day-hint { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+#order-wizard #wizard-day-hint.hidden { display: none; }
+#order-wizard .option-grid { gap: 8px; }
+#order-wizard .option-card { min-height: 56px; }
+#order-wizard .option-card .option-text:not(:has(.dish)) .option-name { font-size: 15px; }
+/* Feriado na fileira de dias: só informa (botão desativado, o pedido pula esse dia) */
+#order-wizard .day-chip:disabled { cursor: default; opacity: 1; }
+
+/* Botão ADM do topo: quando o painel está aberto o botão fica destacado (toque de novo para voltar) */
+#switchToAdmin[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-text); }
+
+/* ===== Cores das opções de almoço (sempre as mesmas, na tela de pedido e nos resumos) =====
+   0 Prato Principal = azul · 1 Opção = violeta · 2 Omelete = âmbar · 3 Filé de frango = verde */
+[data-opt="0"] { --o: #2F5BEA; --o-soft: #EAF0FF; --o-bd: #BFD0FB; --o-ink: #1D3FB8; }
+[data-opt="1"] { --o: #7C3AED; --o-soft: #F2ECFF; --o-bd: #D8C8FA; --o-ink: #5B21B6; }
+[data-opt="2"] { --o: #D97706; --o-soft: #FFF3DA; --o-bd: #F5D89B; --o-ink: #8A4A05; }
+[data-opt="3"] { --o: #16A34A; --o-soft: #E6F7EC; --o-bd: #B7E3C7; --o-ink: #146C34; }
+html.dark [data-opt="0"] { --o: #5B7FF5; --o-soft: #1A2650; --o-bd: #2D3F7E; --o-ink: #B9CAFF; }
+html.dark [data-opt="1"] { --o: #9B6BF2; --o-soft: #2A1E4D; --o-bd: #45337E; --o-ink: #D9C6FF; }
+html.dark [data-opt="2"] { --o: #E8921B; --o-soft: #3A2A0E; --o-bd: #6B4A14; --o-ink: #FFD591; }
+html.dark [data-opt="3"] { --o: #2DBE63; --o-soft: #12301F; --o-bd: #1F5A38; --o-ink: #9BE9B8; }
+
+/* Botões de escolha: emoji em cima, nome centralizado, cor da opção; selecionado vira cor cheia */
+#order-wizard .option-card {
+  flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 74px; padding: 8px 8px; text-align: center;
+  background: var(--o-soft); border: 2px solid var(--o-bd); color: var(--o-ink);
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease, transform .12s ease;
+}
+#order-wizard .option-card:hover { border-color: var(--o); }
+#order-wizard .option-card:active { transform: scale(.96); }
+#order-wizard .option-emoji { font-size: 26px; line-height: 1; }
+#order-wizard .option-text { align-items: center; }
+#order-wizard .option-card .option-text:not(:has(.dish)) .option-name { font-size: 15px; font-weight: 800; color: var(--o-ink); text-align: center; }
+#order-wizard .option-card.selected {
+  background: var(--o); border-color: var(--o); color: #fff;
+  box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--o) 70%, transparent);
+  animation: opt-pop .28s cubic-bezier(.34, 1.56, .64, 1);
+}
+#order-wizard .option-card.selected .option-name { color: #fff !important; }
+#order-wizard .option-card.selected .option-emoji { animation: opt-emoji .42s ease; }
+/* "✓" no canto: não depende só da cor para mostrar o que foi escolhido */
+#order-wizard .option-check {
+  top: 6px; right: 6px; transform: none; width: 20px; height: 20px;
+  background: #fff; color: var(--o); box-shadow: 0 1px 4px rgba(15, 23, 42, .25);
+  animation: opt-check .3s cubic-bezier(.34, 1.56, .64, 1) .04s both;
+}
+#order-wizard .option-check svg { width: 12px; height: 12px; }
+@keyframes opt-pop { 0% { transform: scale(.94); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes opt-emoji { 0% { transform: scale(1) rotate(0); } 40% { transform: scale(1.25) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes opt-check { from { transform: scale(0); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  #order-wizard .option-card, #order-wizard .option-card.selected, #order-wizard .option-emoji,
+  #order-wizard .option-check { animation: none !important; transition: none !important; }
+}
+
+/* Chip colorido da opção nos resumos (pedido feito, revisão e tela de sucesso) */
+.summary-label[data-opt] {
+  display: inline-block; align-self: flex-end; padding: 2px 9px; border-radius: 999px;
+  background: var(--o-soft); color: var(--o-ink); border: 1px solid var(--o-bd);
+  font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none;
+}
+.summary-dish { margin-top: 3px; }
+
+/* Tela de sucesso: lista da semana com os pratos */
+.success-week { width: 100%; text-align: left; margin: 4px 0 6px; }
+.success-week h3 { margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }

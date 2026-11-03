@@ -66,9 +66,11 @@
     const field = { 'Prato Principal': 'principal', 'Opção': 'opcao' }[choice];
     const dish = !holiday && field && mt && typeof mt === 'object' ? (mt[field] || '') : '';
     const garnish = dish && mt.guarnicao ? mt.guarnicao : '';
-    const main = holiday ? 'Feriado' : esc(dish || choice);
-    const label = dish ? `<span class="summary-label">${esc(choice)}</span>` : '';
-    return `<div class="summary-row${holiday ? ' holiday' : ''}"><span class="summary-day">${esc(day.replace('-feira', ''))}</span><span class="summary-choice">${label}${main}${garnish ? `<small>com ${esc(garnish)}</small>` : ''}${notes ? `<small class="summary-note">${esc(notes)}</small>` : ''}</span></div>`;
+    // Chip colorido da opção (a mesma cor dos botões da tela de pedido); o nome do prato vem abaixo
+    const idx = (global.mealOptions || []).findIndex(o => o.name === choice);
+    const chip = holiday ? '' : `<span class="summary-label"${idx >= 0 ? ` data-opt="${idx}"` : ''}>${esc(choice)}</span>`;
+    const main = holiday ? 'Feriado' : (dish ? `<span class="summary-dish">${esc(dish)}</span>` : '');
+    return `<div class="summary-row${holiday ? ' holiday' : ''}"><span class="summary-day">${esc(day.replace('-feira', ''))}</span><span class="summary-choice">${chip}${main}${garnish ? `<small>com ${esc(garnish)}</small>` : ''}${notes ? `<small class="summary-note">${esc(notes)}</small>` : ''}</span></div>`;
   }
 
   // ===== Verifica se ja existe pedido do funcionario =====
@@ -154,7 +156,7 @@
     if (pending !== -1) {
       st.wizardAdvanceTimer = setTimeout(() => {
         if (st.currentDayIndex === index) renderWizardStep(pending);
-      }, 350);
+      }, 650); // tempo para ver o botão "pular" e a marca ✓ antes de passar ao próximo dia
     }
   }
 
@@ -256,6 +258,21 @@
     document.getElementById('confirmation-modal').classList.remove('hidden');
   }
 
+  // Depois de enviar: a lista da semana com o nome dos pratos de verdade (cardápio digitado, quando
+  // o ADM preencheu) e a opção escolhida em cada dia. Feriado não entra na lista.
+  function renderSuccessWeek(st) {
+    const box = document.getElementById('success-week');
+    const list = document.getElementById('success-week-list');
+    if (!box || !list) return;
+    const rows = weekDays.map(day => {
+      const dayId = getDayId(day);
+      const choice = st.tempOrderData[dayId];
+      return choice && choice !== 'FERIADO' ? summaryRow(day, choice, st.tempOrderData[`${dayId}_notes`]) : '';
+    }).join('');
+    list.innerHTML = rows;
+    box.classList.toggle('hidden', !rows);
+  }
+
   // ===== Envia pedido =====
   async function submitOrder() {
     const st = S();
@@ -275,6 +292,7 @@
       document.getElementById('confirmation-modal').classList.add('hidden');
       document.getElementById('form-container').classList.add('hidden');
       document.getElementById('success-message').classList.remove('hidden');
+      renderSuccessWeek(st);
       if (navigator.onLine) {
         await orderPromise;
         document.getElementById('success-text').textContent = `Obrigado, ${st.tempOrderData.employeeName}. O seu pedido foi registado com sucesso.`;

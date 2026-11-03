@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Cardápio Quatinga</title>
-    
+    <!-- Esconde janelas e blocos mesmo se o tailwind.css falhar ao carregar (internet ruim):
+         sem isto todas as janelas (Trocar Senha, Calculadora...) apareciam abertas de uma vez -->
+    <style>.hidden{display:none}.modal-overlay.hidden,.sheet-overlay.hidden{display:none}</style>
+
     <!-- PWA / Web App Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -238,7 +241,7 @@
                 }
             </style>
 <script src="js/menu-viewer.js?v=2026.19"></script>
-    <link rel="stylesheet" href="css/theme.css?v=2026.33">
+    <link rel="stylesheet" href="css/theme.css?v=2026.37">
     <!-- Tailwind já gerado (tailwind.config.js); fica por último, como o antigo Tailwind montado no celular -->
     <link rel="stylesheet" href="css/tailwind.css">
 </head>
@@ -255,8 +258,11 @@
             </div>
         </div>
         <div class="top-actions">
+            <button id="installAppBtn" type="button" class="icon-btn hidden" aria-label="Instalar o app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"></path></svg><span>Instalar</span></button>
+            <button id="notifyBtn" type="button" class="icon-btn hidden" aria-label="Ativar notificações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg><span>Ativar avisos</span></button>
             <button id="darkModeToggle" type="button" class="icon-btn" aria-label="Tema do app"></button>
-            <button id="switchToAdmin" type="button" class="icon-btn" aria-label="Entrar no painel do ADM"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg><span>ADM</span></button>
+            <!-- Botão ADM: abre o painel do ADM e, estando nele (botão destacado), volta para a tela do funcionário -->
+            <button id="switchToAdmin" type="button" class="icon-btn" aria-pressed="false" aria-label="Entrar no painel do ADM"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"></path><path d="M9 12l2 2 4-4"></path></svg><span>ADM</span></button>
         </div>
     </header>
 
@@ -346,7 +352,7 @@
                             <div id="wizard-days" class="day-chips" role="tablist" aria-label="Dias da semana"></div>
                             <div class="wizard-head">
                                 <h3 id="wizard-day-title"></h3>
-                                <span id="wizard-day-hint">Escolha 1 opção</span>
+                                <span id="wizard-day-hint">Toque na sua escolha</span>
                                 <span id="wizard-garnish" class="wizard-garnish hidden"></span>
                             </div>
                             <div id="wizard-holiday" class="holiday-note hidden">
@@ -412,6 +418,11 @@
                 <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
                 <h2>Pedido enviado!</h2>
                 <p id="success-text"></p>
+                <!-- Lista da semana com o nome dos pratos de verdade (montada em order.js renderSuccessWeek) -->
+                <div id="success-week" class="success-week hidden">
+                    <h3>Seu almoço da semana</h3>
+                    <div id="success-week-list" class="summary-list"></div>
+                </div>
                 <button type="button" onclick="location.reload()" class="btn-primary">Voltar ao início</button>
             </div>
 
@@ -704,6 +715,8 @@
                                         <span>Dimensões:</span> <span id="imageDimensions">-</span>
                                         <span>Tamanho estimado:</span> <span id="imageSize">-</span>
                                     </div>
+                                    <!-- Preencher com IA logo ao escolher a foto (usa a mesma leitura do "Cardápio digitado") -->
+                                    <button type="button" id="uploadAiBtn" class="btn-primary btn-ai mt-3 w-full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Preencher com IA</button>
                                     <div class="mt-3 flex gap-2">
                                         <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
                                         <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
@@ -1230,21 +1243,31 @@
     <script src="js/db.js?v=2026.17"></script>
     <script src="js/prefeitura.js?v=2026.1"></script>
     <script src="js/auth.js?v=2026.1"></script>
-    <script src="js/ui.js?v=2026.28"></script>
-    <script src="js/order.js?v=2026.24"></script>
-    <script src="js/userhelp.js?v=2026.19"></script>
+    <script src="js/ui.js?v=2026.31"></script>
+    <script src="js/order.js?v=2026.26"></script>
+    <script src="js/userhelp.js?v=2026.20"></script>
     <script src="js/home.js?v=2026.4"></script>
-    <script src="js/admin.js?v=2026.27"></script>
+    <script src="js/admin.js?v=2026.28"></script>
     <script src="js/financas.js?v=2026.15"></script>
     <script src="js/notificationChecker.js?v=2026.14"></script>
     <script src="js/notificationTrigger.js?v=2026.15"></script>
     <script src="js/pushRegistration.js?v=2026.15"></script>
-    <script src="js/installHelper.js?v=2026.14"></script>
-    <script src="js/adminNotify.js?v=2026.14"></script>
-    <script src="js/menuText.js?v=2026.3"></script>
-    <script src="js/adminHome.js?v=2026.2"></script>
+    <script src="js/installHelper.js?v=2026.16"></script>
+    <script src="js/adminNotify.js?v=2026.15"></script>
+    <script src="js/menuText.js?v=2026.4"></script>
+    <script src="js/adminHome.js?v=2026.3"></script>
     <script src="js/appUpdate.js?v=2026.12"></script>
-    <script src="js/app.js?v=2026.22"></script>
+    <script src="js/app.js?v=2026.25"></script>
+<!-- Visor de PDF: o PDF aparece aqui dentro do app, sem baixar (js/admin.js openPdfVisor) -->
+<div id="pdf-visor" class="hidden no-print" role="dialog" aria-modal="true" aria-label="PDF da semana">
+    <header class="pdfv-top">
+        <button type="button" id="pdf-visor-close" class="btn-ghost">← Voltar</button>
+        <strong id="pdf-visor-title">PDF</strong>
+    </header>
+    <div id="pdf-visor-pages" class="pdfv-pages"></div>
+    <div id="pdf-visor-actions" class="pdfv-actions"></div>
+</div>
+
 <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print">
             <!-- Topo: voltar, título e zoom (flutuam sobre a foto) -->
             <div class="viewer-top">
@@ -1270,7 +1293,8 @@
         // impedia o modo offline de funcionar. O activate do sw-v2.js ja limpa caches antigos.
         // No APK os arquivos ja estao no aparelho: o Service Worker so serve para o site/PWA
         const isNativeApp = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !isNativeApp) {
+        // Modo teste (localhost:8091): sem Service Worker, para cada ajuste aparecer na hora
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !isNativeApp && !window.__TEST_MODE) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 const antigos = registrations.filter(function(registration) {
                     const sw = registration.active || registration.waiting || registration.installing;

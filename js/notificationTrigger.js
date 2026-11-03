@@ -10,6 +10,8 @@
   const PENDING_KEY = 'pendingOrderNotifications';
 
   async function callNotifyEndpoint(payload) {
+    // Modo teste: nunca chama o Worker de verdade (nada de aviso real para os funcionários)
+    if (global.__TEST_MODE && global.fakeNotifyEndpoint) return global.fakeNotifyEndpoint(payload);
     const user = auth && auth.currentUser;
     if (!user) throw new Error('sem login');
     const idToken = await user.getIdToken();

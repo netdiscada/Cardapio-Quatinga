@@ -97,6 +97,7 @@
 
   global.renderAdminHome = renderAdminHome;
   global.closeAdminPop = closePop;
+  global.openAdmPop = openPop;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
 })(window);

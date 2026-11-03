@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-v34';
+const CACHE_NAME = 'cardapio-v35';
 
 // ===== Notificacoes do site (Firebase Cloud Messaging) =====
 // Com o site fechado o FCM mostra a notificacao sozinho e, no clique, abre o link
@@ -96,7 +96,10 @@ self.addEventListener('fetch', (event) => {
   // senao o cache-first devolve para sempre a primeira resposta.
   if (url.includes('api.github.com') || url.includes('mogidascruzes.sp.gov.br') || url.includes('workers.dev')) return;
 
-  const isAppAsset = CORE_ASSETS.some(asset => url.endsWith(asset.replace('./', ''))) || url.endsWith('/');
+  // Compara só o caminho: o index.html chama css/theme.css?v=... e js/app.js?v=..., e com o
+  // "?v=" o arquivo caía no cache-first (e numa falha de rede recebia uma resposta vazia)
+  const path = new URL(url).pathname;
+  const isAppAsset = CORE_ASSETS.some(asset => asset !== './' && path.endsWith(asset.replace('./', '/'))) || path.endsWith('/');
 
   if (isAppAsset) {
     event.respondWith(staleWhileRevalidate(request));
@@ -107,14 +110,20 @@ self.addEventListener('fetch', (event) => {
 
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
+  // Um único registro por arquivo, sem o "?v=": o "?v=" muda a cada versão, mas o arquivo
+  // guardado na instalação não tem "?v=". (ignoreSearch devolveria sempre o registro mais
+  // antigo quando houvesse vários "?v=" guardados, deixando o celular preso na versão velha.)
+  const keyUrl = new URL(request.url);
+  keyUrl.search = '';
+  const key = keyUrl.href;
+  const cached = await cache.match(key);
 
   const fetchPromise = fetch(request).then(res => {
     if (res.ok) {
-      cache.put(request, res.clone());
+      cache.put(key, res.clone());
     }
     return res;
-  }).catch(() => cached);
+  }).catch(() => cached || Response.error());
 
   return cached || fetchPromise;
 }

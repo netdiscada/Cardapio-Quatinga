@@ -3,8 +3,24 @@
 // Carregado PRIMEIRO no index.html como script classico (escopo global via window).
 
 (function (global) {
+  // ===== MODO TESTE (dados falsos) =====
+  // Só liga em http://localhost:8091 (servidor de teste do PC; o site publicado e o APK nunca
+  // usam essa porta). Troca o Firebase pelos emuladores do PC, desliga o push e simula o Worker,
+  // para testar tudo sem tocar no cardápio verdadeiro. Ver js/testMode.js.
+  global.__TEST_MODE = global.location.hostname === 'localhost' && global.location.port === '8091';
+  if (global.__TEST_MODE) {
+    document.write('<script src="js/testMode.js?t=' + Date.now() + '"><\/script>');
+  }
+
   // ===== Firebase Config ===== (identica ao v1.x) =====
-  global.firebaseConfig = {
+  global.firebaseConfig = global.__TEST_MODE ? {
+    apiKey: 'fake-api-key',
+    authDomain: 'localhost',
+    projectId: 'demo-cardapio',
+    storageBucket: 'demo-cardapio.appspot.com',
+    messagingSenderId: '1',
+    appId: '1:1:web:fake',
+  } : {
     apiKey: "AIzaSyDVaHDQ-gqnRHCEPopne1kzhIKAo2gIIGQ",
     authDomain: "cardapio-8ddea.firebaseapp.com",
     projectId: "cardapio-8ddea",
